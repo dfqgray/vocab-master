@@ -1,0 +1,155 @@
+// Supabase client, auth, and cloud sync module
+const SUPABASE_URL = 'https://cbzmnpogteihbywamvlp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ArmMNthfTBG8yqo4rQ8gdA_4O-JXLwJ';
+
+let supabase = null;
+let currentUser = null;
+let cloudReady = false;
+let cloudInitError = '';
+
+let syncTimer = null;
+let isSyncing = false;
+let pendingSync = false;
+
+function initSupabase() {
+  return new Promise((resolve) => {
+    if (!window.supabase) {
+      cloudInitError = 'SDK未加载，请检查网络';
+      cloudReady = false;
+      resolve(false);
+      return;
+    }
+    if (typeof window.supabase.createClient !== 'function') {
+      cloudInitError = 'SDK版本不兼容';
+      cloudReady = false;
+      resolve(false);
+      return;
+    }
+    try {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      cloudReady = true;
+      cloudInitError = '';
+      resolve(true);
+    } catch (e) {
+      cloudInitError = '初始化异常: ' + e.message;
+      cloudReady = false;
+      resolve(false);
+    }
+  });
+}
+
+async function cloudRegister(email, password) {
+  if (!cloudReady) throw new Error(cloudInitError || '云端未连接，请检查网络后刷新页面重试');
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
+  if (data.user && !data.session) {
+    throw new Error('注册成功！请前往邮箱 ' + email + ' 点击确认链接，然后返回登录');
+  }
+  if (data.user) {
+    currentUser = data.user;
+    await cloudInitProgress();
+  }
+  return data;
+}
+
+async function cloudLogin(email, password) {
+  if (!cloudReady) throw new Error(cloudInitError || '云端未连接，请检查网络后刷新页面重试');
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (error.message && error.message.toLowerCase().includes('email not confirmed')) {
+      throw new Error('邮箱未确认，请先前往邮箱点击确认链接');
+    }
+    throw error;
+  }
+  if (data.user) { currentUser = data.user; await cloudLoadProgress(); }
+  return data;
+}
+
+async function cloudLogout() {
+  if (!cloudReady) return;
+  await cloudSyncNow();
+  await supabase.auth.signOut();
+  currentUser = null;
+}
+
+async function cloudCheckSession() {
+  if (!cloudReady) return false;
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) return false;
+  currentUser = data.session.user;
+  await cloudLoadProgress();
+  return true;
+}
+
+async function cloudInitProgress() {
+  if (!currentUser) return;
+  try { await cloudUploadProgress(); } catch (e) { console.log('[DB] init:', e.message); }
+}
+
+async function cloudLoadProgress() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await supabase.from('user_progress').select('*').eq('user_id', currentUser.id).single();
+    if (error && error.code !== 'PGRST116') throw error;
+    if (data) {
+      if (data.word_states) window.__getAppState().wordStates = data.word_states;
+      if (data.wrong_words) window.__getAppState().wrongWords = new Set(data.wrong_words);
+      if (data.starred_words) window.__getAppState().starredWords = new Set(data.starred_words);
+      if (data.game_data) {
+        window.__getAppState().game = Object.assign(
+          { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
+          data.game_data
+        );
+      }
+      if (data.custom_words && data.custom_words.length > 0) window.__getAppState().WORDS = data.custom_words;
+      window.__saveLocal();
+    } else {
+      await cloudUploadProgress();
+    }
+  } catch (e) { console.error('[DB] 加载失败:', e); }
+}
+
+async function cloudUploadProgress() {
+  if (!currentUser) return;
+  const state = window.__getAppState();
+  try {
+    const { error } = await supabase.from('user_progress').upsert({
+      user_id: currentUser.id,
+      word_states: state.wordStates,
+      wrong_words: [...state.wrongWords],
+      starred_words: [...state.starredWords],
+      game_data: state.game,
+      custom_words: state.WORDS,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (error) throw error;
+  } catch (e) { console.error('[DB] 上传失败:', e); }
+}
+
+function cloudSyncDebounced() {
+  if (!cloudReady || !currentUser) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => cloudSyncNow(), 800);
+}
+
+async function cloudSyncNow() {
+  if (!cloudReady || !currentUser) return;
+  if (isSyncing) { pendingSync = true; return; }
+  isSyncing = true;
+  try { await cloudUploadProgress(); } finally {
+    isSyncing = false;
+    if (pendingSync) { pendingSync = false; cloudSyncNow(); }
+  }
+}
+
+function isLoggedIn() { return !!currentUser; }
+function getUserEmail() { return currentUser ? currentUser.email : null; }
+function isCloudReady() { return cloudReady; }
+function getCloudError() { return cloudInitError; }
+
+export {
+  initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudCheckSession,
+  cloudSyncDebounced, cloudSyncNow, isLoggedIn, getUserEmail, isCloudReady, getCloudError
+};

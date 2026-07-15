@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>词汇大师 - Vocab Master</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ==================== Navbar ==================== -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <div class="nav-logo" onclick="goPage('home')">
+        <div class="li">V</div>词汇大师
+      </div>
+      <div class="nav-stats">
+        <div class="ns streak"><span class="ico">🔥</span><span id="nav-streak">0</span></div>
+        <div class="ns xp"><span class="ico">⚡</span><span id="nav-xp">0</span></div>
+        <div class="ns heart"><span class="ico">❤️</span><span id="nav-hearts">5</span></div>
+      </div>
+      <div class="nav-auth" id="nav-auth-area"></div>
+      <div class="nav-tabs">
+        <button class="nt active" onclick="goPage('home')">🏠 首页</button>
+        <button class="nt" onclick="goPage('flashcard')">📇 闪卡</button>
+        <button class="nt" onclick="goPage('quiz')">📝 测验</button>
+        <button class="nt" onclick="goPage('match')">🔗 配对</button>
+        <button class="nt" onclick="goPage('write')">✍️ 拼写</button>
+        <button class="nt" onclick="goPage('wrong')">📋 错词</button>
+        <button class="nt" onclick="goPage('words')">📚 词表</button>
+        <button class="nt" onclick="goPage('achievements')">🏆 成就</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== Home Page ==================== -->
+  <div class="page" id="page-home">
+    <div class="hero">
+      <div class="hero-emoji">📖</div>
+      <h1>今天学点什么？</h1>
+      <p>每天坚持，词汇量翻倍！</p>
+      <div class="goal-ring-wrap">
+        <div class="goal-ring">
+          <svg viewBox="0 0 100 100" width="100" height="100">
+            <circle class="ring-bg" cx="50" cy="50" r="42"/>
+            <circle class="ring-fg" id="goal-ring-fg" cx="50" cy="50" r="42"
+              stroke-dasharray="263.89" stroke-dashoffset="263.89"/>
+          </svg>
+          <div class="ring-text">
+            <div class="ring-num" id="goal-xp">0</div>
+            <div class="ring-lbl">今日XP</div>
+          </div>
+        </div>
+      </div>
+      <div class="streak-row" id="streak-row"></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card g"><div class="si">📚</div><div class="sn" id="s-total">0</div><div class="sl">总词汇</div></div>
+      <div class="stat-card b"><div class="si">✅</div><div class="sn" id="s-known">0</div><div class="sl">已掌握</div></div>
+      <div class="stat-card y"><div class="si">🔄</div><div class="sn" id="s-learning">0</div><div class="sl">学习中</div></div>
+      <div class="stat-card r"><div class="si">📝</div><div class="sn" id="s-wrong">0</div><div class="sl">错词本</div></div>
+    </div>
+
+    <div class="level-bar-wrap">
+      <div class="level-bar-top">
+        <span class="lv" id="s-level">Lv.1</span>
+        <span class="xp"><span id="s-xp-cur">0</span> / <span id="s-xp-next">100</span> XP</span>
+      </div>
+      <div class="level-bar"><div class="level-fill" id="s-level-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="mode-grid">
+      <div class="mode-card mc-green" onclick="goPage('flashcard')">
+        <div class="mi">📇</div><div class="mt">闪卡学习</div>
+        <div class="md">翻转卡片，左滑右滑</div>
+        <span class="mc-star" id="star-fc" style="opacity:0.3">⭐</span>
+        <div class="mb" id="wl-badge">0 词</div>
+      </div>
+      <div class="mode-card mc-blue" onclick="goPage('quiz')">
+        <div class="mi">📝</div><div class="mt">选择/听写测验</div>
+        <div class="md">测试你的词汇量</div>
+        <div class="mb">🎯 测试</div>
+      </div>
+      <div class="mode-card mc-purple" onclick="goPage('match')">
+        <div class="mi">🔗</div><div class="mt">英中配对</div>
+        <div class="md">限时挑战速度</div>
+        <div class="mb">⚡ 配对</div>
+      </div>
+      <div class="mode-card mc-orange" onclick="goPage('write')">
+        <div class="mi">✍️</div><div class="mt">拼写模式</div>
+        <div class="md">看中文写英文</div>
+        <div class="mb">📝 拼写</div>
+      </div>
+      <div class="mode-card mc-red" onclick="goPage('wrong')">
+        <div class="mi">📋</div><div class="mt">错词复习</div>
+        <div class="md">专攻薄弱环节</div>
+        <span class="mc-star" id="star-ww" style="opacity:0.3">⭐</span>
+        <div class="mb" id="ww-badge">0 词</div>
+      </div>
+      <div class="mode-card mc-yellow" onclick="goPage('words')">
+        <div class="mi">📚</div><div class="mt">词汇总表</div>
+        <div class="md">浏览全部单词</div>
+        <div class="mb">🔍 总览</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-gray btn-sm" onclick="openImportModal()">📥 导入单词</button>
+      <button class="btn btn-gray btn-sm" onclick="goPage('achievements')">🏆 成就</button>
+    </div>
+  </div>
+
+  <!-- ==================== Flashcard Page ==================== -->
+  <div class="page hidden" id="page-flashcard">
+    <div class="page-title">📇 闪卡学习</div>
+    <div class="page-sub">点击翻转 | 左滑不认识 | 右滑已掌握</div>
+
+    <!-- Setup -->
+    <div id="fc-start">
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">选择单元：</span>
+        <div class="fc-unit-row" id="fc-unit-row"></div>
+        <div class="fc-unit-info" id="fc-unit-info"></div>
+      </div>
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">每次学习数量：</span>
+        <div class="fc-size-row" id="fc-size-row"></div>
+      </div>
+      <div class="fc-options">
+        <button class="fc-opt-btn" id="fc-opt-shuffle" onclick="toggleShuffle(this)">🔀 随机顺序</button>
+        <button class="fc-opt-btn" id="fc-opt-starred" onclick="toggleStarredOnly(this)">⭐ 仅星标</button>
+        <button class="fc-opt-btn" id="fc-opt-wrong" onclick="toggleWrongOnly(this)">📝 仅错词</button>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-green btn-full" style="max-width:300px" onclick="startFlashcard()">🚀 开始学习</button>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div id="fc-play" class="hidden">
+      <div class="prog-top">
+        <div class="prog-bar"><div class="prog-fill green" id="fc-fill" style="width:0%"></div></div>
+        <span class="prog-count" id="fc-count">0/0</span>
+        <span style="font-size:22px;cursor:pointer" id="fc-star" onclick="toggleStar()">⭐</span>
+      </div>
+      <div class="fc-card-wrap">
+        <div class="fc-card" id="fc-card" onclick="flipCard()">
+          <div class="fc-face fc-front">
+            <span class="fc-unit-badge" id="fc-unit-badge"></span>
+            <div class="fc-word" id="fc-word"></div>
+            <div class="fc-phon" id="fc-phon"></div>
+            <button class="fc-tts" onclick="event.stopPropagation();speak(getFcWord())">🔊</button>
+            <div class="fc-hint">👆 点击翻卡 | ← → 键选择</div>
+          </div>
+          <div class="fc-face fc-back">
+            <div class="fc-meaning" id="fc-meaning"></div>
+            <div class="fc-pos" id="fc-pos"></div>
+            <div class="fc-example" id="fc-example"></div>
+            <div class="fc-root-box">
+              <div class="fc-root-title">🔍 词根词缀</div>
+              <div class="fc-root-text" id="fc-root"></div>
+              <div class="fc-mn-title">💡 联想助记</div>
+              <div class="fc-mn-text" id="fc-mn"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-controls">
+        <button class="btn btn-red" onclick="markFlashcard(false)">❌ 不认识</button>
+        <button class="btn btn-gray" onclick="skipCard()">⏭ 跳过</button>
+        <button class="btn btn-green" onclick="markFlashcard(true)">✅ 认识</button>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div id="fc-done" class="hidden">
+      <div class="result">
+        <div class="big-emoji">🎉</div>
+        <h2>闪卡学习完成！</h2>
+        <div class="score-big"><span id="fc-done-known">0</span>/<span id="fc-done-count">0</span></div>
+        <p>已掌握</p>
+        <div class="result-btns">
+          <button class="btn btn-green" onclick="resetFlashcard()">🔄 再来一组</button>
+          <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Quiz Page ==================== -->
+  <div class="page hidden" id="page-quiz">
+    <div class="page-title">📝 选择/听写测验</div>
+    <div class="page-sub">10题挑战，看你能对多少！</div>
+
+    <!-- Setup -->
+    <div id="qz-start">
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">选择单元：</span>
+        <div class="fc-unit-row" id="qz-unit-row"></div>
+        <div class="fc-unit-info" id="qz-unit-info"></div>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-blue btn-full" style="max-width:300px" onclick="startQuiz()">🚀 开始测验</button>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div id="qz-play" class="hidden">
+      <div class="prog-top">
+        <div class="prog-bar"><div class="prog-fill blue" id="qz-fill" style="width:0%"></div></div>
+        <span class="prog-count" id="qz-count">0/10</span>
+        <span style="font-size:14px;font-weight:800;color:var(--yellow-d);white-space:nowrap" id="qz-score-display">⭐ 0</span>
+      </div>
+      <div class="heart-row" id="qz-hearts"></div>
+
+      <!-- Multiple Choice -->
+      <div class="qz-card hidden" id="qz-choice">
+        <span class="qz-badge choice">选择题</span>
+        <div class="qz-question">以下哪个是这个词的中文意思？</div>
+        <div class="qz-display" id="qz-word"></div>
+        <div class="qz-options" id="qz-options"></div>
+        <div class="qz-feedback hidden" id="qz-feedback"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-blue hidden" id="qz-next-btn" onclick="nextQuestion()">▶️ 下一题</button>
+        </div>
+      </div>
+
+      <!-- Dictation -->
+      <div class="qz-card hidden" id="qz-dict">
+        <span class="qz-badge dict">听写题</span>
+        <div class="qz-question">请听发音，拼写出单词</div>
+        <div class="qz-display" id="qz-dict-answer" style="cursor:pointer" onclick="speak(document.getElementById('qz-dict-answer').textContent)"></div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:12px">👆 点击单词可重听</div>
+        <div class="dict-input-wrap">
+          <input class="dict-input" id="qz-dict-input" type="text" placeholder="输入单词..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-purple" id="qz-dict-submit" onclick="submitDict()">✅ 提交</button>
+        </div>
+        <div class="qz-feedback hidden" id="qz-dict-feedback"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-blue hidden" id="qz-dict-next" onclick="nextQuestion()">▶️ 下一题</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div id="qz-done" class="hidden">
+      <div class="result">
+        <div class="big-emoji" id="qz-done-emoji">🏆</div>
+        <h2 id="qz-done-title">太棒了！</h2>
+        <div class="score-big" id="qz-done-score">0/10</div>
+        <p id="qz-done-label">继续努力！</p>
+        <div class="result-btns">
+          <button class="btn btn-blue" onclick="resetQuiz()">🔄 再来一组</button>
+          <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Match Page ==================== -->
+  <div class="page hidden" id="page-match">
+    <div class="page-title">🔗 英中配对</div>
+    <div class="page-sub">限时匹配英文单词和中文释义</div>
+
+    <!-- Setup -->
+    <div id="mt-start">
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">选择单元：</span>
+        <div class="fc-unit-row" id="mt-unit-row"></div>
+        <div class="fc-unit-info" id="mt-unit-info"></div>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-purple btn-full" style="max-width:300px" onclick="startMatch()">🚀 开始配对</button>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div id="mt-play" class="hidden">
+      <div class="match-timer" id="mt-timer">⏱ 0s</div>
+      <div class="prog-top">
+        <div class="prog-bar"><div class="prog-fill purple" id="mt-fill" style="width:0%"></div></div>
+        <span class="prog-count" id="mt-count">0/6</span>
+      </div>
+      <div class="match-grid" id="mt-grid"></div>
+    </div>
+
+    <!-- Done -->
+    <div id="mt-done" class="hidden">
+      <div class="result">
+        <div class="big-emoji" id="mt-done-emoji">🎉</div>
+        <h2 id="mt-done-title">配对完成！</h2>
+        <p>用时 <span id="mt-done-time">0</span> 秒</p>
+        <div class="score-big" id="mt-done-xp">+15 XP</div>
+        <div class="result-btns">
+          <button class="btn btn-purple" onclick="resetMatch()">🔄 再来一组</button>
+          <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Write Page ==================== -->
+  <div class="page hidden" id="page-write">
+    <div class="page-title">✍️ 拼写模式</div>
+    <div class="page-sub">看中文释义，拼写英文单词</div>
+
+    <!-- Setup -->
+    <div id="wr-start">
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">选择单元：</span>
+        <div class="fc-unit-row" id="wr-unit-row"></div>
+        <div class="fc-unit-info" id="wr-unit-info"></div>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-green btn-full" style="max-width:300px" onclick="startWrite()">🚀 开始拼写</button>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div id="wr-play" class="hidden">
+      <div class="prog-top">
+        <div class="prog-bar"><div class="prog-fill green" id="wr-fill" style="width:0%"></div></div>
+        <span class="prog-count" id="wr-count">0/10</span>
+        <span style="font-size:14px;font-weight:800;color:var(--yellow-d);white-space:nowrap" id="wr-score-display">⭐ 0</span>
+      </div>
+      <div class="qz-card">
+        <span class="qz-badge write">拼写题</span>
+        <div class="qz-question">请拼写出以下中文释义对应的英文单词：</div>
+        <div class="qz-display" id="wr-cn"></div>
+        <div style="text-align:center;color:var(--t3);font-size:12px;margin-bottom:12px" id="wr-pos"></div>
+        <div class="dict-input-wrap">
+          <input class="dict-input" id="wr-input" type="text" placeholder="输入英文..." autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-green" id="wr-submit" onclick="submitWrite()">✅ 提交</button>
+        </div>
+        <div class="qz-feedback hidden" id="wr-feedback"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-blue hidden" id="wr-next" onclick="nextWrite()">▶️ 下一题</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div id="wr-done" class="hidden">
+      <div class="result">
+        <div class="big-emoji" id="wr-done-emoji">🏆</div>
+        <h2 id="wr-done-title">拼写大师！</h2>
+        <div class="score-big" id="wr-done-score">0/10</div>
+        <p id="wr-done-label">记忆力超群！</p>
+        <div class="result-btns">
+          <button class="btn btn-green" onclick="resetWrite()">🔄 再来一组</button>
+          <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Wrong Words Page ==================== -->
+  <div class="page hidden" id="page-wrong">
+    <div class="ww-header">
+      <div class="ww-title">
+        <h2>📋 错词复习</h2>
+        <p>共 <span id="ww-count">0</span> 个错词</p>
+      </div>
+      <div class="ww-search">
+        <span class="si">🔍</span>
+        <input type="text" id="ww-search" placeholder="搜索错词..." oninput="renderWrongWords()">
+      </div>
+    </div>
+    <div class="ww-unit-bar">
+      <select class="ww-unit-select" id="ww-unit-select" onchange="onWwUnitChange()"></select>
+      <span class="ww-unit-tag" id="ww-unit-tag" style="display:none"></span>
+    </div>
+    <div class="ww-list" id="ww-list"></div>
+  </div>
+
+  <!-- ==================== Word List Page ==================== -->
+  <div class="page hidden" id="page-words">
+    <div class="page-title">📚 词汇总表</div>
+    <div class="page-sub">浏览全部词汇，管理学习状态</div>
+
+    <div class="wl-header">
+      <div class="wl-search">
+        <span class="si">🔍</span>
+        <input type="text" id="wl-search" placeholder="搜索单词..." oninput="renderWordList()">
+      </div>
+      <select class="ww-unit-select" id="wl-unit-select" onchange="renderWordList()"></select>
+    </div>
+    <div class="wl-tabs">
+      <button class="wl-tab active" onclick="setWlFilter('all', this)">全部</button>
+      <button class="wl-tab" onclick="setWlFilter('known', this)">✅ 已掌握</button>
+      <button class="wl-tab" onclick="setWlFilter('learning', this)">🔄 学习中</button>
+      <button class="wl-tab" onclick="setWlFilter('starred', this)">⭐ 星标</button>
+      <button class="wl-tab" onclick="setWlFilter('wrong', this)">📝 错词</button>
+    </div>
+    <div style="margin-bottom:12px;font-size:12px;color:var(--t2)">
+      共 <span id="wl-count">0</span> 个单词
+    </div>
+    <div class="wl-table" id="wl-table"></div>
+  </div>
+
+  <!-- ==================== Achievements Page ==================== -->
+  <div class="page hidden" id="page-achievements">
+    <div class="page-title">🏆 我的成就</div>
+    <div class="page-sub">解锁全部成就，成为词汇大师！</div>
+    <div class="ach-grid" id="ach-grid"></div>
+  </div>
+
+  <!-- ==================== Level Up Modal ==================== -->
+  <div class="overlay hidden" id="levelup-modal">
+    <div class="modal">
+      <div class="modal-big-emoji">🎉</div>
+      <h2 id="levelup-text">恭喜升级！</h2>
+      <p>继续加油，解锁更多成就！</p>
+      <button class="btn btn-green btn-full" onclick="document.getElementById('levelup-modal').classList.add('hidden')">👍 继续</button>
+    </div>
+  </div>
+
+  <!-- ==================== Import Modal ==================== -->
+  <div class="overlay hidden" id="import-modal">
+    <div class="modal">
+      <h2>📥 导入单词</h2>
+      <p>粘贴单词数据，格式：英文|中文|词性|音标|例句</p>
+      <textarea id="import-text" placeholder="ability|能力|n.|/əˈbɪləti/|She has the ability to succeed."></textarea>
+      <div class="fh">用竖线 | 分隔，每行一个单词。也可以用英文逗号或中文逗号分隔。</div>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="import-replace"> 替换所有单词（清空现有词库）
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-gray" onclick="closeImportModal()">取消</button>
+        <button class="btn btn-green" onclick="doImport()">✅ 导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Auth Modal ==================== -->
+  <div class="overlay hidden" id="auth-modal">
+    <div class="auth-card" style="position:relative">
+      <button class="auth-close" onclick="closeAuthModal()" style="position:absolute;top:16px;right:16px;background:none;font-size:22px;color:var(--t3);cursor:pointer">&times;</button>
+      <h2 id="auth-title">登录</h2>
+      <p class="sub" id="auth-sub">登录后数据自动云端同步</p>
+      <div class="auth-err" id="auth-err"></div>
+      <input class="auth-input" id="auth-email" type="email" placeholder="邮箱地址" autocomplete="email">
+      <input class="auth-input" id="auth-pass" type="password" placeholder="密码（至少6位）" autocomplete="current-password">
+      <button class="auth-submit" id="auth-submit-btn" onclick="handleAuthSubmit()">登录</button>
+      <div class="auth-switch" id="auth-switch" onclick="toggleAuthMode()">
+        还没有账号？<span>去注册</span>
+      </div>
+      <div class="auth-info">
+        🔒 数据通过 Supabase 安全存储<br>
+        注册后请前往邮箱点击确认链接
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Toast ==================== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ==================== Sync Badge ==================== -->
+  <div class="sync-badge" id="sync-badge"></div>
+
+  <!-- ==================== Confetti Canvas ==================== -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- ==================== Scripts ==================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
