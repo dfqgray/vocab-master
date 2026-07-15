@@ -105,27 +105,44 @@ async function cloudLoadProgress() {
       }
       if (data.custom_words && data.custom_words.length > 0) window.__getAppState().WORDS = data.custom_words;
       window.__saveLocal();
+      if (window.__showToast) window.__showToast('☁️ 云端数据已同步到本地');
     } else {
-      await cloudUploadProgress();
+      // First time — upload local data to cloud
+      const ok = await cloudUploadProgress();
+      if (ok && window.__showToast) window.__showToast('☁️ 本地数据已上传到云端');
     }
-  } catch (e) { console.error('[DB] 加载失败:', e); }
+  } catch (e) {
+    console.error('[DB] 加载失败:', e);
+    if (window.__showToast) window.__showToast('⚠️ 云端同步失败: ' + (e.message || '未知错误'));
+  }
 }
 
 async function cloudUploadProgress() {
-  if (!currentUser) return;
+  if (!currentUser) return false;
   const state = window.__getAppState();
   try {
-    const { error } = await supabase.from('user_progress').upsert({
+    // Only sync learning progress, not the full word list
+    // (default words are in words.js, custom words are synced separately)
+    const payload = {
       user_id: currentUser.id,
       word_states: state.wordStates,
       wrong_words: [...state.wrongWords],
       starred_words: [...state.starredWords],
       game_data: state.game,
-      custom_words: state.WORDS,
       updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
+    };
+    // Only include custom_words if user has imported custom words
+    if (window.__hasCustomWords && window.__hasCustomWords()) {
+      payload.custom_words = state.WORDS;
+    }
+    const { error } = await supabase.from('user_progress').upsert(payload, { onConflict: 'user_id' });
     if (error) throw error;
-  } catch (e) { console.error('[DB] 上传失败:', e); }
+    return true;
+  } catch (e) {
+    console.error('[DB] 上传失败:', e);
+    if (window.__showSyncBadge) window.__showSyncBadge('⚠️ 同步失败: ' + (e.message || '未知错误'), true);
+    return false;
+  }
 }
 
 function cloudSyncDebounced() {
@@ -138,7 +155,10 @@ async function cloudSyncNow() {
   if (!cloudReady || !currentUser) return;
   if (isSyncing) { pendingSync = true; return; }
   isSyncing = true;
-  try { await cloudUploadProgress(); } finally {
+  try {
+    const ok = await cloudUploadProgress();
+    if (ok && window.__showSyncBadge) window.__showSyncBadge('☁️ 同步完成', false);
+  } finally {
     isSyncing = false;
     if (pendingSync) { pendingSync = false; cloudSyncNow(); }
   }

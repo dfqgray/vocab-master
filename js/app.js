@@ -32,6 +32,16 @@ let authMode = 'login';
 // Expose state for supabase module (avoids circular dependency)
 window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS });
 window.__saveLocal = saveLocal;
+window.__showToast = showToast;
+window.__showSyncBadge = showSyncBadge;
+// Only sync custom_words if user actually imported custom words
+window.__hasCustomWords = () => {
+  try {
+    const def = JSON.stringify(DEFAULT_WORDS);
+    const cur = JSON.stringify(WORDS);
+    return cur !== def;
+  } catch (e) { return false; }
+};
 
 // ==================== Storage ====================
 const WORDS_VERSION = 'v5_2452_etymology';
