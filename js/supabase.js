@@ -94,18 +94,10 @@ async function cloudLoadProgress() {
     const { data, error } = await supabase.from('user_progress').select('*').eq('user_id', currentUser.id).single();
     if (error && error.code !== 'PGRST116') throw error;
     if (data) {
-      if (data.word_states) window.__getAppState().wordStates = data.word_states;
-      if (data.wrong_words) window.__getAppState().wrongWords = new Set(data.wrong_words);
-      if (data.starred_words) window.__getAppState().starredWords = new Set(data.starred_words);
-      if (data.game_data) {
-        window.__getAppState().game = Object.assign(
-          { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
-          data.game_data
-        );
+      if (window.__loadCloudState) {
+        window.__loadCloudState(data);
+        if (window.__showToast) window.__showToast('☁️ 云端数据已同步到本地');
       }
-      if (data.custom_words && data.custom_words.length > 0) window.__getAppState().WORDS = data.custom_words;
-      window.__saveLocal();
-      if (window.__showToast) window.__showToast('☁️ 云端数据已同步到本地');
     } else {
       // First time — upload local data to cloud
       const ok = await cloudUploadProgress();

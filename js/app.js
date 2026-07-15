@@ -34,6 +34,22 @@ window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORD
 window.__saveLocal = saveLocal;
 window.__showToast = showToast;
 window.__showSyncBadge = showSyncBadge;
+// Properly load cloud data into module-level state (fixes sync bug)
+window.__loadCloudState = (data) => {
+  if (data.word_states) wordStates = data.word_states;
+  if (data.wrong_words) wrongWords = new Set(data.wrong_words);
+  if (data.starred_words) starredWords = new Set(data.starred_words);
+  if (data.game_data) {
+    game = Object.assign(
+      { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
+      data.game_data
+    );
+  }
+  if (data.custom_words && data.custom_words.length > 0) WORDS = data.custom_words;
+  saveLocal();
+  updateHome();
+  renderAll();
+};
 // Only sync custom_words if user actually imported custom words
 window.__hasCustomWords = () => {
   try {
