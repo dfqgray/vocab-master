@@ -10,6 +10,39 @@
 </head>
 <body>
 
+  <!-- ==================== Landing Page ==================== -->
+  <div id="landing-page">
+    <div class="landing-wrap">
+      <div class="landing-card">
+        <div class="landing-emoji">📖</div>
+        <h1 class="landing-title">词汇大师</h1>
+        <p class="landing-subtitle">每天坚持，词汇量翻倍</p>
+
+        <div id="landing-err" class="landing-err"></div>
+
+        <div id="landing-fields">
+          <input class="landing-input" id="land-email" type="email" placeholder="邮箱地址" autocomplete="email">
+          <input class="landing-input" id="land-pass" type="password" placeholder="密码（至少6位）" autocomplete="current-password">
+          <button class="landing-submit" id="land-submit" onclick="window.handleLandingSubmit()">登录</button>
+        </div>
+
+        <div id="landing-loading" class="hidden">
+          <div class="landing-spinner"></div>
+          <p>正在加载...</p>
+        </div>
+
+        <div class="landing-switch" id="land-switch" onclick="window.toggleLandingMode()">
+          还没有账号？<span>去注册</span>
+        </div>
+
+        <div class="landing-info">🔒 数据通过 Supabase 云端同步</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== App Content ==================== -->
+  <div id="app-content" class="hidden">
+
   <!-- ==================== Navbar ==================== -->
   <nav class="navbar">
     <div class="nav-inner">
@@ -509,6 +542,8 @@
       </div>
     </div>
   </div>
+
+  </div><!-- /app-content -->
 
   <!-- ==================== Toast ==================== -->
   <div class="toast" id="toast"></div>

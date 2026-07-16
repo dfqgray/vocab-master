@@ -29,6 +29,7 @@ let wwSelectedUnits = [];
 let wlSelectedUnits = [];
 let wlFilter = 'all';
 let authMode = 'login';
+let landMode = 'login'; // landing page mode
 
 // Expose state for supabase module (avoids circular dependency)
 window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS });
@@ -1609,6 +1610,66 @@ function doImport() {
 }
 window.doImport = doImport;
 
+// ==================== Landing Page ====================
+function showApp() {
+  document.getElementById('landing-page').classList.add('hidden');
+  document.getElementById('app-content').classList.remove('hidden');
+  updateAuthUI();
+  updateHome();
+  renderAll();
+}
+
+function showLanding() {
+  document.getElementById('landing-page').classList.remove('hidden');
+  document.getElementById('app-content').classList.add('hidden');
+  // Reset landing form
+  document.getElementById('land-email').value = '';
+  document.getElementById('land-pass').value = '';
+  document.getElementById('landing-err').textContent = '';
+  document.getElementById('landing-fields').classList.remove('hidden');
+  document.getElementById('landing-loading').classList.add('hidden');
+}
+
+function toggleLandingMode() {
+  landMode = landMode === 'login' ? 'register' : 'login';
+  const isLogin = landMode === 'login';
+  document.getElementById('land-submit').textContent = isLogin ? '登录' : '注册';
+  document.getElementById('land-switch').innerHTML = isLogin
+    ? '还没有账号？<span>去注册</span>'
+    : '已有账号？<span>去登录</span>';
+  document.getElementById('landing-err').textContent = '';
+}
+window.toggleLandingMode = toggleLandingMode;
+
+async function handleLandingSubmit() {
+  const email = document.getElementById('land-email').value.trim();
+  const password = document.getElementById('land-pass').value;
+  const errEl = document.getElementById('landing-err');
+
+  if (!email || !password) { errEl.textContent = '请填写邮箱和密码'; return; }
+  if (password.length < 6) { errEl.textContent = '密码至少6位'; return; }
+
+  const btn = document.getElementById('land-submit');
+  btn.disabled = true;
+  btn.textContent = '处理中...';
+
+  try {
+    if (landMode === 'register') {
+      await cloudRegister(email, password);
+    } else {
+      await cloudLogin(email, password);
+    }
+    showApp();
+    showSyncBadge(landMode === 'register' ? '注册成功！' : '登录成功！', false);
+  } catch (e) {
+    errEl.textContent = e.message || '操作失败，请重试';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = landMode === 'login' ? '登录' : '注册';
+  }
+}
+window.handleLandingSubmit = handleLandingSubmit;
+
 // ==================== Auth UI ====================
 function updateAuthUI() {
   const area = document.getElementById('nav-auth-area');
@@ -1710,11 +1771,9 @@ async function handleAuthSubmit() {
 window.handleAuthSubmit = handleAuthSubmit;
 
 async function handleLogout() {
-  try { await cloudLogout(); showSyncBadge('已退出登录', false); } catch (e) { /* ignore */ }
+  try { await cloudLogout(); } catch (e) { /* ignore */ }
+  showLanding();
   updateAuthUI();
-  loadLocal();
-  updateHome();
-  renderAll();
 }
 window.handleLogout = handleLogout;
 
@@ -1773,26 +1832,30 @@ window.addEventListener('online', () => {
 // Load local data first
 loadLocal();
 
-// Render auth UI immediately
-updateAuthUI();
+// Disable landing submit until Supabase is ready
+document.getElementById('land-submit').disabled = true;
+document.getElementById('land-submit').textContent = '正在连接服务器...';
 
-// Init Supabase async
+// Landing page is visible by default, app hidden
+// Init Supabase async — if already logged in, skip landing page
 initSupabase().then(ok => {
-  updateAuthUI();
+  // Enable landing submit button
+  const landBtn = document.getElementById('land-submit');
+  landBtn.disabled = false;
+  landBtn.textContent = landMode === 'login' ? '登录' : '注册';
+
   if (ok) {
     cloudCheckSession().then(loggedIn => {
       if (loggedIn) {
+        showApp();
         showSyncBadge('已自动登录', false);
-        updateAuthUI();
-        updateHome();
-        renderAll();
       }
     }).catch(e => console.log('[Session] check failed:', e));
   }
 }).catch(e => {
   console.error('[Init] initSupabase failed:', e);
-  updateAuthUI();
+  // Still enable button so user can retry
+  const landBtn = document.getElementById('land-submit');
+  landBtn.disabled = false;
+  landBtn.textContent = landMode === 'login' ? '登录' : '注册';
 });
-
-// Render home
-updateHome();
