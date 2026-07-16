@@ -60,7 +60,7 @@ window.__hasCustomWords = () => {
 };
 
 // ==================== Storage ====================
-const WORDS_VERSION = 'v6_2028_pdf_book';
+const WORDS_VERSION = 'v7_fullfields_2028';
 
 function saveLocal() {
   localStorage.setItem('pvm_words', JSON.stringify(WORDS));
@@ -584,6 +584,14 @@ function showFlashcard() {
   document.getElementById('fc-example').textContent = w.e;
   document.getElementById('fc-root').textContent = w.root || '—';
   document.getElementById('fc-mn').textContent = w.mn || '—';
+  document.getElementById('fc-coll').textContent = w.coll || '';
+  document.getElementById('fc-deriv').textContent = w.deriv || '';
+  document.getElementById('fc-extra').innerHTML =
+    (w.coll ? '<span class="fc-tag">📎 ' + w.coll + '</span>' : '') +
+    (w.deriv ? '<span class="fc-tag">🌿 ' + w.deriv + '</span>' : '') +
+    (w.ant ? '<span class="fc-tag">↔ ' + w.ant + '</span>' : '') +
+    (w.syn ? '<span class="fc-tag">≈ ' + w.syn + '</span>' : '') +
+    (w.plur ? '<span class="fc-tag">📋 ' + w.plur + '</span>' : '');
   document.getElementById('fc-count').textContent = (fcS.index + 1) + '/' + fcS.total;
   document.getElementById('fc-fill').style.width = (fcS.index / fcS.total * 100) + '%';
   document.getElementById('fc-unit-badge').textContent = w.unit ? 'UNIT ' + w.unit : '';
@@ -1173,6 +1181,8 @@ function renderWordList() {
       '<div class="wl-phon">' + w.p + '</div>' +
       (w.root ? '<div class="wl-root">🔍 ' + w.root + '</div>' : '') +
       (w.mn ? '<div class="wl-mn">💡 ' + w.mn + '</div>' : '') +
+      (w.coll ? '<div class="wl-mn" style="background:#e8f5e9;color:#2e7d32">📎 ' + w.coll + '</div>' : '') +
+      (w.deriv ? '<div class="wl-mn" style="background:#fce4ec;color:#c62828">🌿 ' + w.deriv + '</div>' : '') +
       '</div>' +
       '<div class="wl-pos">' + w.pos + '</div>' +
       '<div class="wl-cn">' + w.m + '</div>' +
