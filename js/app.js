@@ -949,23 +949,6 @@ window.setTTSVoice = setTTSVoice;
 window.getAvailableVoices = getAvailableVoices;
 window.getTTSEngineName = getTTSEngineName;
 
-// Swipe support
-let touchStartX = 0, touchEndX = 0;
-document.addEventListener('touchstart', e => {
-  if (document.getElementById('page-flashcard').classList.contains('hidden')) return;
-  if (document.getElementById('fc-play').classList.contains('hidden')) return;
-  touchStartX = e.changedTouches[0].screenX;
-}, { passive: true });
-document.addEventListener('touchend', e => {
-  if (document.getElementById('page-flashcard').classList.contains('hidden')) return;
-  if (document.getElementById('fc-play').classList.contains('hidden')) return;
-  touchEndX = e.changedTouches[0].screenX;
-  const diff = touchEndX - touchStartX;
-  if (Math.abs(diff) < 60) return;
-  if (diff > 0) markFlashcard(true);
-  else markFlashcard(false);
-}, { passive: true });
-
 // ==================== Quiz ====================
 function resetQuiz() {
   document.getElementById('qz-start').classList.remove('hidden');
@@ -1706,8 +1689,6 @@ document.addEventListener('keydown', e => {
   if (!document.getElementById('page-flashcard').classList.contains('hidden') &&
       !document.getElementById('fc-play').classList.contains('hidden')) {
     if (e.key === ' ') { e.preventDefault(); flipCard(); }
-    if (e.key === 'ArrowLeft') markFlashcard(false);
-    if (e.key === 'ArrowRight') markFlashcard(true);
     if (e.key === 'Escape') skipCard();
   }
   if (!document.getElementById('page-write').classList.contains('hidden') &&
