@@ -74,6 +74,15 @@ async function cloudLogout() {
   currentUser = null;
 }
 
+async function cloudChangePassword(newPassword) {
+  if (!cloudReady) throw new Error('云端未连接');
+  if (!currentUser) throw new Error('请先登录');
+  if (!newPassword || newPassword.length < 6) throw new Error('新密码至少6位');
+  const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+  return data;
+}
+
 async function cloudCheckSession() {
   if (!cloudReady) return false;
   const { data, error } = await supabase.auth.getSession();
@@ -162,6 +171,6 @@ function isCloudReady() { return cloudReady; }
 function getCloudError() { return cloudInitError; }
 
 export {
-  initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudCheckSession,
+  initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudChangePassword, cloudCheckSession,
   cloudSyncDebounced, cloudSyncNow, isLoggedIn, getUserEmail, isCloudReady, getCloudError
 };

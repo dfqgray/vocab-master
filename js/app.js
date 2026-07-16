@@ -1,6 +1,6 @@
 import { DEFAULT_WORDS } from './words.js';
 import {
-  initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudCheckSession,
+  initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudChangePassword, cloudCheckSession,
   cloudSyncDebounced, cloudSyncNow, isLoggedIn, getUserEmail, isCloudReady, getCloudError
 } from './supabase.js';
 
@@ -1608,6 +1608,7 @@ function updateAuthUI() {
     area.innerHTML = `
       <span class="cloud-icon ${cloudOn ? 'on' : 'off'}">${cloudOn ? '☁️' : '⚠️'}</span>
       <span class="user-badge" title="${email}">${email}</span>
+      <button class="auth-btn" style="background:var(--purple);color:#fff;box-shadow:0 4px 0 var(--purple-d)" onclick="window.openAuthModal('changePassword')">🔒</button>
       <button class="auth-btn logout" onclick="window.handleLogout()">退出</button>
     `;
   } else {
@@ -1618,20 +1619,29 @@ window.updateAuthUI = updateAuthUI;
 
 function openAuthModal(mode) {
   authMode = mode || 'login';
+  const isChangePw = authMode === 'changePassword';
   document.getElementById('auth-modal').classList.remove('hidden');
-  document.getElementById('auth-title').textContent = authMode === 'login' ? '登录' : '注册';
-  document.getElementById('auth-sub').textContent = authMode === 'login' ? '登录后数据自动云端同步' : '注册新账号，开始云端同步';
-  document.getElementById('auth-submit-btn').textContent = authMode === 'login' ? '登录' : '注册';
+  document.getElementById('auth-title').textContent = isChangePw ? '修改密码' : (authMode === 'login' ? '登录' : '注册');
+  document.getElementById('auth-sub').textContent = isChangePw ? '请输入新密码（至少6位）' : (authMode === 'login' ? '登录后数据自动云端同步' : '注册新账号，开始云端同步');
+  document.getElementById('auth-submit-btn').textContent = isChangePw ? '确认修改' : (authMode === 'login' ? '登录' : '注册');
   const sw = document.getElementById('auth-switch');
-  sw.innerHTML = authMode === 'login' ? '还没有账号？<span>去注册</span>' : '已有账号？<span>去登录</span>';
+  sw.innerHTML = isChangePw ? '' : (authMode === 'login' ? '还没有账号？<span>去注册</span>' : '已有账号？<span>去登录</span>');
   document.getElementById('auth-err').textContent = '';
   document.getElementById('auth-email').value = '';
   document.getElementById('auth-pass').value = '';
-  setTimeout(() => document.getElementById('auth-email').focus(), 100);
+  // Hide email field when changing password (already logged in)
+  document.getElementById('auth-email').classList.toggle('hidden', isChangePw);
+  setTimeout(() => {
+    if (isChangePw) document.getElementById('auth-pass').focus();
+    else document.getElementById('auth-email').focus();
+  }, 100);
 }
 window.openAuthModal = openAuthModal;
 
-function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.add('hidden');
+  document.getElementById('auth-email').classList.remove('hidden');
+}
 window.closeAuthModal = closeAuthModal;
 
 function toggleAuthMode() { openAuthModal(authMode === 'login' ? 'register' : 'login'); }
@@ -1642,6 +1652,26 @@ async function handleAuthSubmit() {
   const password = document.getElementById('auth-pass').value;
   const errEl = document.getElementById('auth-err');
   errEl.textContent = '';
+
+  if (authMode === 'changePassword') {
+    if (!password) { errEl.textContent = '请输入新密码'; return; }
+    if (password.length < 6) { errEl.textContent = '新密码至少6位'; return; }
+    const btn = document.getElementById('auth-submit-btn');
+    btn.textContent = '处理中...';
+    btn.disabled = true;
+    try {
+      await cloudChangePassword(password);
+      closeAuthModal();
+      showSyncBadge('密码修改成功', false);
+    } catch (e) {
+      errEl.textContent = e.message || '修改失败，请重试';
+    } finally {
+      btn.textContent = '确认修改';
+      btn.disabled = false;
+    }
+    return;
+  }
+
   if (!email || !password) { errEl.textContent = '请填写邮箱和密码'; return; }
   if (password.length < 6) { errEl.textContent = '密码至少6位'; return; }
   const btn = document.getElementById('auth-submit-btn');
