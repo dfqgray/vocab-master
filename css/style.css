@@ -336,6 +336,12 @@ a{text-decoration:none}
 .auth-close{position:absolute;top:16px;right:16px;font-size:22px;color:var(--t3);cursor:pointer;background:none}
 .auth-info{font-size:12px;color:var(--t3);text-align:center;margin-top:16px;line-height:1.5;padding:12px;background:var(--bg2);border-radius:8px}
 
+/* TTS Voice Selector */
+.tts-selector select{font-family:inherit;font-weight:700;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23777' d='M4 5L0 1h8z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 6px center;padding-right:20px}
+.tts-selector select:focus{border-color:var(--green);outline:none}
+
 /* Sync indicator */
 .sync-badge{position:fixed;bottom:16px;right:16px;background:var(--green);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:800;box-shadow:0 4px 16px rgba(0,0,0,.2);z-index:5000;opacity:0;transform:translateY(20px);transition:all .3s}
 .sync-badge.show{opacity:1;transform:translateY(0)}

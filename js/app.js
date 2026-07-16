@@ -270,13 +270,114 @@ function goPage(name) {
 window.goPage = goPage;
 
 // ==================== TTS ====================
+let ttsVoice = null;        // user-selected voice
+let ttsVoices = [];         // all available English voices
+let ttsVoiceName = localStorage.getItem('pvm_tts_voice') || ''; // persisted preference
+
+function initTTSVoices() {
+  if (!window.speechSynthesis) return;
+  ttsVoices = speechSynthesis.getVoices();
+  if (ttsVoices.length === 0) return;
+  // Filter to English voices only
+  const enVoices = ttsVoices.filter(v => v.lang.startsWith('en'));
+  if (enVoices.length === 0) return;
+  // If user previously selected a voice, restore it
+  if (ttsVoiceName) {
+    ttsVoice = enVoices.find(v => v.name === ttsVoiceName) || null;
+  }
+  // Otherwise pick the best available voice automatically
+  if (!ttsVoice) {
+    // Priority: premium voices first
+    const premium = enVoices.find(v => v.name.includes('Google') && v.name.includes('US'))  // Chrome
+      || enVoices.find(v => v.name.includes('Samantha'))   // macOS
+      || enVoices.find(v => v.name.includes('Daniel'))     // macOS UK
+      || enVoices.find(v => v.name.includes('Microsoft') && v.name.includes('US') && v.name.includes('Natural')) // Edge
+      || enVoices.find(v => v.name.includes('US English')) // fallback
+      || enVoices[0];
+    ttsVoice = premium;
+  }
+}
+
+// Chrome loads voices async, Safari sync
+if (window.speechSynthesis) {
+  speechSynthesis.onvoiceschanged = () => {
+    initTTSVoices();
+    renderTTSSelector();
+  };
+  initTTSVoices(); // Safari
+  renderTTSSelector();
+}
+
+function renderTTSSelector() {
+  const sel = document.getElementById('tts-voice-select');
+  const wrap = document.getElementById('tts-selector');
+  if (!sel || !wrap) return;
+  const voices = getAvailableVoices();
+  if (voices.length === 0) return;
+  wrap.style.display = '';
+  let html = '<option value="">🔊 ' + getTTSEngineName() + '</option>';
+  // Group voices by source
+  const grouped = {};
+  voices.forEach(v => {
+    let group = '其他';
+    if (v.name.includes('Google')) group = 'Google';
+    else if (v.name.includes('Samantha') || v.name.includes('Daniel') || v.name.includes('Alex')) group = 'macOS';
+    else if (v.name.includes('Microsoft')) group = 'Microsoft';
+    if (!grouped[group]) grouped[group] = [];
+    grouped[group].push(v);
+  });
+  const order = ['Google', 'macOS', 'Microsoft', '其他'];
+  order.forEach(g => {
+    if (grouped[g]) {
+      html += '<optgroup label="' + g + '">';
+      grouped[g].forEach(v => {
+        const sel = v.name === ttsVoiceName ? ' selected' : '';
+        html += '<option value="' + v.name.replace(/"/g, '&quot;') + '"' + sel + '>' + v.name + '</option>';
+      });
+      html += '</optgroup>';
+    }
+  });
+  sel.innerHTML = html;
+}
+
+// Refresh voice list periodically (voices may load after first page load)
+setTimeout(() => { initTTSVoices(); renderTTSSelector(); }, 500);
+
+function getTTSEngineName() {
+  if (!ttsVoice) return '系统默认';
+  if (ttsVoice.name.includes('Google')) return 'Google (推荐)';
+  if (ttsVoice.name.includes('Samantha')) return 'Samantha (macOS)';
+  if (ttsVoice.name.includes('Daniel')) return 'Daniel (macOS)';
+  if (ttsVoice.name.includes('Microsoft')) return 'Microsoft Azure';
+  return ttsVoice.name;
+}
+
 function speak(word) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(word);
   u.lang = 'en-US';
-  u.rate = 0.8;
+  u.rate = 0.85;
+  if (ttsVoice) u.voice = ttsVoice;
   speechSynthesis.speak(u);
+}
+
+function setTTSVoice(name) {
+  ttsVoiceName = name;
+  localStorage.setItem('pvm_tts_voice', name);
+  ttsVoice = ttsVoices.find(v => v.name === name) || null;
+  if (name === '' && ttsVoices.length > 0) {
+    // Reset to auto (best available)
+    initTTSVoices();
+    ttsVoiceName = ttsVoice ? ttsVoice.name : '';
+    localStorage.setItem('pvm_tts_voice', ttsVoiceName);
+  }
+}
+
+function getAvailableVoices() {
+  if (!window.speechSynthesis) return [];
+  const voices = speechSynthesis.getVoices();
+  return voices.filter(v => v.lang.startsWith('en'));
 }
 
 // ==================== Toast ====================
@@ -526,6 +627,9 @@ window.toggleStar = toggleStar;
 window.markFlashcard = markFlashcard;
 window.skipCard = skipCard;
 window.speak = speak;
+window.setTTSVoice = setTTSVoice;
+window.getAvailableVoices = getAvailableVoices;
+window.getTTSEngineName = getTTSEngineName;
 
 // Swipe support
 let touchStartX = 0, touchEndX = 0;

@@ -22,6 +22,9 @@
         <div class="ns heart"><span class="ico">❤️</span><span id="nav-hearts">5</span></div>
       </div>
       <div class="nav-auth" id="nav-auth-area"></div>
+      <div class="tts-selector" id="tts-selector" style="display:none">
+        <select id="tts-voice-select" onchange="window.setTTSVoice(this.value)" style="font-size:11px;padding:3px 6px;border-radius:8px;border:2px solid var(--bd);background:#fff;color:var(--t2);max-width:130px;cursor:pointer"></select>
+      </div>
       <div class="nav-tabs">
         <button class="nt active" onclick="goPage('home')">🏠 首页</button>
         <button class="nt" onclick="goPage('flashcard')">📇 闪卡</button>
