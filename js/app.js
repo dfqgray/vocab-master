@@ -362,21 +362,17 @@ function speak(word) {
   speechSynthesis.speak(u);
 }
 
-// Native audio from book CD (split from unit tracks)
+// Native audio from Supabase Storage (book CD word-level MP3s)
+const AUDIO_BASE = 'https://cbzmnpogteihbywamvlp.supabase.co/storage/v1/object/public/audio';
 let nativeAudio = null;
 function playNativeAudio(word) {
   if (!word) return;
   const safe = word.replace(/[/ ]/g, '_');
-  const url = 'audio/' + safe + '.mp3';
-  // Stop any currently playing native audio
+  const url = AUDIO_BASE + '/' + safe + '.mp3';
   if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
-  // Also stop TTS
   if (window.speechSynthesis) speechSynthesis.cancel();
   const a = new Audio(url);
-  a.onerror = () => {
-    // If file not found, fall back to TTS
-    speak(word);
-  };
+  a.onerror = () => { speak(word); };
   nativeAudio = a;
   a.play();
 }
