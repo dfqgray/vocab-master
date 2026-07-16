@@ -575,19 +575,27 @@ function showFlashcard() {
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
   document.getElementById('fc-word').textContent = w.w;
   document.getElementById('fc-phon').textContent = w.p;
-  document.getElementById('fc-meaning').textContent = w.m;
+  // 释 (definition)
   document.getElementById('fc-pos').textContent = w.pos;
-  document.getElementById('fc-example').textContent = w.e;
-  document.getElementById('fc-root').textContent = w.root || '—';
-  document.getElementById('fc-mn').textContent = w.mn || '—';
+  document.getElementById('fc-meaning').textContent = w.m;
+  // 例 (example)
+  document.getElementById('fc-example').textContent = w.e || '';
+  document.getElementById('fc-example-box').classList.toggle('hidden', !w.e);
+  // 搭 (collocations)
   document.getElementById('fc-coll').textContent = w.coll || '';
+  document.getElementById('fc-coll-box').classList.toggle('hidden', !w.coll);
+  // 记 (root + mnemonic)
+  document.getElementById('fc-root').textContent = w.root || '';
+  document.getElementById('fc-root-box').classList.toggle('hidden', !w.root);
+  document.getElementById('fc-mn').textContent = w.mn || '';
+  document.getElementById('fc-mn-box').classList.toggle('hidden', !w.mn);
+  // 派 (derived)
   document.getElementById('fc-deriv').textContent = w.deriv || '';
-  document.getElementById('fc-extra').innerHTML =
-    (w.coll ? '<span class="fc-tag">📎 ' + w.coll + '</span>' : '') +
-    (w.deriv ? '<span class="fc-tag">🌿 ' + w.deriv + '</span>' : '') +
-    (w.ant ? '<span class="fc-tag">↔ ' + w.ant + '</span>' : '') +
-    (w.syn ? '<span class="fc-tag">≈ ' + w.syn + '</span>' : '') +
-    (w.plur ? '<span class="fc-tag">📋 ' + w.plur + '</span>' : '');
+  document.getElementById('fc-deriv-box').classList.toggle('hidden', !w.deriv);
+  // 反/近/复 (other)
+  const other = [w.ant ? '↔ ' + w.ant : '', w.syn ? '≈ ' + w.syn : '', w.plur ? '📋 ' + w.plur : ''].filter(Boolean).join('  ');
+  document.getElementById('fc-other').textContent = other;
+  document.getElementById('fc-other-box').classList.toggle('hidden', !other);
   document.getElementById('fc-count').textContent = (fcS.index + 1) + '/' + fcS.total;
   document.getElementById('fc-fill').style.width = (fcS.index / fcS.total * 100) + '%';
   document.getElementById('fc-unit-badge').textContent = w.unit ? 'UNIT ' + w.unit : '';

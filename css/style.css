@@ -145,11 +145,13 @@ a{text-decoration:none}
 .fc-back .fc-meaning{font-size:22px;font-weight:800;margin-bottom:8px;text-align:center}
 .fc-back .fc-pos{font-size:12px;opacity:.8;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:20px;margin-bottom:12px}
 .fc-back .fc-example{font-size:14px;opacity:.95;text-align:center;line-height:1.5;font-style:italic;max-width:300px}
-.fc-root-box{background:rgba(255,255,255,.12);border-radius:12px;padding:10px 14px;margin:8px 0 10px;max-width:320px;width:100%;text-align:left}
-.fc-root-title{font-size:11px;font-weight:800;opacity:.7;margin-bottom:2px}
-.fc-root-text{font-size:13px;font-weight:600;line-height:1.5;margin-bottom:8px;word-break:break-all}
-.fc-mn-title{font-size:11px;font-weight:800;opacity:.7;margin-bottom:2px}
-.fc-mn-text{font-size:13px;line-height:1.6;word-break:break-all}
+/* V2: book-structured back face */
+.fc-back-section{margin-bottom:8px;max-width:320px;width:100%}
+.fc-back-label{font-size:10px;font-weight:800;opacity:.6;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+.fc-back-text{font-size:12px;font-weight:600;line-height:1.5;word-break:break-all}
+.fc-back-pos{font-size:11px;opacity:.7;margin-bottom:4px;text-align:center}
+.fc-back-meaning{font-size:22px;font-weight:800;text-align:center;line-height:1.3}
+.fc-back-example{font-size:13px;font-weight:500;line-height:1.6;text-align:center;font-style:italic}
 .fc-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .fc-options{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
 .fc-opt-btn{background:#fff;border:2px solid var(--bd);border-radius:var(--rx);padding:6px 12px;font-size:12px;color:var(--t2);cursor:pointer;box-shadow:0 2px 0 var(--bd);transition:all .1s}
