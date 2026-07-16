@@ -358,6 +358,18 @@ a{text-decoration:none}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .pulse{animation:pulse .3s ease}
 
+/* ============ Speech Recognition ============ */
+#fc-speak-btn.listening{background:var(--red);color:#fff;animation:micPulse .8s ease-in-out infinite}
+#fc-speak-btn.success{background:var(--green);color:#fff;box-shadow:0 0 12px var(--green)}
+#fc-speak-btn.error{background:var(--red);color:#fff;animation:shake .3s ease}
+.fc-speak-feedback{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;margin-top:10px;border-radius:var(--rx);font-size:13px;font-weight:700;transition:all .2s}
+.fc-speak-feedback.correct{background:var(--green-l);color:var(--green-d)}
+.fc-speak-feedback.close{background:var(--yellow-l);color:var(--yellow-d)}
+.fc-speak-feedback.wrong{background:var(--red-l);color:var(--red-d)}
+.fc-speak-fb-icon{font-size:18px;flex-shrink:0}
+.fc-speak-fb-text{line-height:1.3}
+@keyframes micPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.8}}
+
 /* ============ Responsive ============ */
 @media(max-width:600px){
   .nav-inner{padding:8px 12px}

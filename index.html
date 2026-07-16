@@ -197,6 +197,11 @@
         <button class="btn btn-red" onclick="markFlashcard(false)">❌ 不认识</button>
         <button class="btn btn-gray" onclick="skipCard()">⏭ 跳过</button>
         <button class="btn btn-green" onclick="markFlashcard(true)">✅ 认识</button>
+        <button class="btn btn-purple" id="fc-speak-btn" onclick="toggleListening()">🎤 朗读</button>
+      </div>
+      <div class="fc-speak-feedback hidden" id="fc-speak-feedback">
+        <span class="fc-speak-fb-icon" id="fc-speak-fb-icon"></span>
+        <span class="fc-speak-fb-text" id="fc-speak-fb-text"></span>
       </div>
     </div>
 

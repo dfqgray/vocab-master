@@ -15,7 +15,7 @@ let game = {
 };
 
 // Session state
-let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false };
+let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false, recognition: null, isListening: false };
 let qzS = { index: 0, total: 10, score: 0, questions: [], current: null };
 let wrS = { index: 0, total: 10, score: 0, words: [] };
 let mtS = { pairs: [], matched: 0, total: 6, startTime: 0, timerInt: null, firstSel: null, locked: false };
@@ -395,6 +395,171 @@ function getAvailableVoices() {
   return voices.filter(v => v.lang.startsWith('en'));
 }
 
+// ==================== Speech Recognition ====================
+let SpeechRecognitionAPI = null;
+(function detectSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) { SpeechRecognitionAPI = SR; }
+})();
+
+function isSpeechRecognitionSupported() {
+  return !!SpeechRecognitionAPI;
+}
+
+function createRecognition() {
+  if (!SpeechRecognitionAPI) return null;
+  const rec = new SpeechRecognitionAPI();
+  rec.lang = 'en-US';
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  rec.continuous = false;
+  return rec;
+}
+
+function startListening() {
+  if (fcS.isListening) return;
+  if (!isSpeechRecognitionSupported()) {
+    showToast('此浏览器不支持语音识别，请使用 Chrome 或 Edge');
+    return;
+  }
+
+  // Stop any ongoing TTS
+  if (window.speechSynthesis) speechSynthesis.cancel();
+
+  const rec = createRecognition();
+  if (!rec) {
+    showToast('语音识别不可用');
+    return;
+  }
+
+  fcS.recognition = rec;
+  fcS.isListening = true;
+  updateSpeakUI();
+
+  rec.onresult = (event) => {
+    const transcript = (event.results[0][0].transcript || '').trim();
+    fcS.isListening = false;
+    fcS.recognition = null;
+    updateSpeakUI();
+    showRecognitionResult(transcript);
+  };
+
+  rec.onerror = (event) => {
+    fcS.isListening = false;
+    fcS.recognition = null;
+    updateSpeakUI();
+    if (event.error === 'no-speech') {
+      showToast('未检测到语音，请再试一次');
+    } else if (event.error === 'aborted') {
+      // User stopped intentionally, no message needed
+    } else if (event.error === 'not-allowed') {
+      showToast('麦克风权限未授权，请在浏览器设置中允许');
+    } else {
+      showToast('识别出错: ' + event.error);
+    }
+  };
+
+  rec.onend = () => {
+    fcS.isListening = false;
+    fcS.recognition = null;
+    updateSpeakUI();
+  };
+
+  rec.start();
+}
+
+function stopListening() {
+  if (fcS.recognition) {
+    try { fcS.recognition.abort(); } catch (e) { /* ignore */ }
+    fcS.recognition = null;
+  }
+  fcS.isListening = false;
+  updateSpeakUI();
+}
+
+function toggleListening() {
+  if (fcS.isListening) {
+    stopListening();
+  } else {
+    startListening();
+  }
+}
+window.toggleListening = toggleListening;
+
+function levenshteinDistance(a, b) {
+  const al = a.length, bl = b.length;
+  const matrix = [];
+  for (let i = 0; i <= al; i++) { matrix[i] = [i]; }
+  for (let j = 0; j <= bl; j++) { matrix[0][j] = j; }
+  for (let i = 1; i <= al; i++) {
+    for (let j = 1; j <= bl; j++) {
+      matrix[i][j] = a[i - 1] === b[j - 1]
+        ? matrix[i - 1][j - 1]
+        : Math.min(matrix[i - 1][j - 1], matrix[i - 1][j], matrix[i][j - 1]) + 1;
+    }
+  }
+  return matrix[al][bl];
+}
+
+function checkPronunciation(spoken, target) {
+  const s = spoken.toLowerCase().replace(/[^a-z]/g, '').trim();
+  const t = target.toLowerCase().replace(/[^a-z]/g, '').trim();
+  if (s === t) return { correct: true, close: false };
+  const dist = levenshteinDistance(s, t);
+  if (dist <= 2 && s.length >= t.length * 0.6) return { correct: false, close: true };
+  return { correct: false, close: false };
+}
+
+function updateSpeakUI() {
+  const btn = document.getElementById('fc-speak-btn');
+  const fb = document.getElementById('fc-speak-feedback');
+  if (!btn) return;
+
+  // Hide feedback when starting new listen
+  if (fb && fcS.isListening) fb.classList.add('hidden');
+
+  if (fcS.isListening) {
+    btn.classList.add('listening');
+    btn.classList.remove('success', 'error');
+    btn.textContent = '🔴 聆听中';
+  } else {
+    btn.classList.remove('listening', 'success', 'error');
+    btn.textContent = '🎤 朗读';
+  }
+}
+
+function showRecognitionResult(transcript) {
+  const word = fcS.list[fcS.index].w;
+  const result = checkPronunciation(transcript, word);
+  const fb = document.getElementById('fc-speak-feedback');
+  const iconEl = document.getElementById('fc-speak-fb-icon');
+  const textEl = document.getElementById('fc-speak-fb-text');
+  const btn = document.getElementById('fc-speak-btn');
+
+  if (!fb) return;
+
+  fb.classList.remove('hidden', 'correct', 'close', 'wrong');
+
+  if (result.correct) {
+    fb.classList.add('correct');
+    iconEl.textContent = '✅';
+    textEl.textContent = '发音正确！你说的是 "' + transcript + '"';
+    if (btn) { btn.classList.remove('listening', 'error'); btn.classList.add('success'); }
+    sfxCorrect();
+    addXP(2);
+  } else if (result.close) {
+    fb.classList.add('close');
+    iconEl.textContent = '⚠️';
+    textEl.textContent = '接近了！你说的是 "' + transcript + '"，目标词是 "' + word + '"';
+    if (btn) { btn.classList.remove('listening', 'success'); btn.classList.add('error'); }
+  } else {
+    fb.classList.add('wrong');
+    iconEl.textContent = '❌';
+    textEl.textContent = '不太对。你说的是 "' + transcript + '"，目标词是 "' + word + '"';
+    if (btn) { btn.classList.remove('listening', 'success'); btn.classList.add('error'); }
+  }
+}
+
 // ==================== Toast ====================
 let toastTimer;
 function showToast(msg) {
@@ -488,6 +653,10 @@ function resetFlashcard() {
   document.getElementById('fc-start').classList.remove('hidden');
   document.getElementById('fc-play').classList.add('hidden');
   document.getElementById('fc-done').classList.add('hidden');
+  // Reset speech recognition
+  stopListening();
+  const fb = document.getElementById('fc-speak-feedback');
+  if (fb) fb.classList.add('hidden');
   renderFcUnitSelector();
   renderFcSizeSelector();
 }
@@ -560,6 +729,9 @@ function startFlashcard() {
   fcS.index = 0;
   fcS.knownCount = 0;
   fcS.total = fcS.list.length;
+  // Show/hide speak button based on browser support
+  const speakBtn = document.getElementById('fc-speak-btn');
+  if (speakBtn) speakBtn.classList.toggle('hidden', !isSpeechRecognitionSupported());
   document.getElementById('fc-start').classList.add('hidden');
   document.getElementById('fc-done').classList.add('hidden');
   document.getElementById('fc-play').classList.remove('hidden');
@@ -573,6 +745,11 @@ function showFlashcard() {
   const w = fcS.list[fcS.index];
   const card = document.getElementById('fc-card');
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
+  // Reset speech recognition state for new card
+  stopListening();
+  updateSpeakUI();
+  const fb = document.getElementById('fc-speak-feedback');
+  if (fb) fb.classList.add('hidden');
   document.getElementById('fc-word').textContent = w.w;
   document.getElementById('fc-phon').textContent = w.p;
   // 释 (definition)
