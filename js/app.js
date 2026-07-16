@@ -47,18 +47,31 @@ window.__loadCloudState = (data) => {
       data.game_data
     );
   }
-  if (data.custom_words && data.custom_words.length > 0) WORDS = data.custom_words;
+  if (data.custom_words && data.custom_words.length > 0) {
+    // Only keep words NOT in DEFAULT_WORDS (truly custom imports)
+    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    const extraWords = data.custom_words.filter(w => !defaultSet.has(w.w));
+    if (extraWords.length > 0) {
+      WORDS = [...DEFAULT_WORDS, ...extraWords];
+    }
+  }
   saveLocal();
   updateHome();
   renderAll();
 };
-// Only sync custom_words if user actually imported custom words
+// Only sync custom_words if user actually imported custom words beyond DEFAULT_WORDS
 window.__hasCustomWords = () => {
   try {
-    const def = JSON.stringify(DEFAULT_WORDS);
-    const cur = JSON.stringify(WORDS);
-    return cur !== def;
+    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    return WORDS.some(w => !defaultSet.has(w.w));
   } catch (e) { return false; }
+};
+// Get only extra words beyond DEFAULT_WORDS for cloud sync
+window.__getExtraWords = () => {
+  try {
+    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    return WORDS.filter(w => !defaultSet.has(w.w));
+  } catch (e) { return []; }
 };
 
 // ==================== Storage ====================

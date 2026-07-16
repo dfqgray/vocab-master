@@ -132,9 +132,12 @@ async function cloudUploadProgress() {
       game_data: state.game,
       updated_at: new Date().toISOString()
     };
-    // Only include custom_words if user has imported custom words
+    // Only include custom_words if user has imported custom words beyond defaults
     if (window.__hasCustomWords && window.__hasCustomWords()) {
-      payload.custom_words = state.WORDS;
+      const extraWords = window.__getExtraWords ? window.__getExtraWords() : [];
+      if (extraWords.length > 0) {
+        payload.custom_words = extraWords;
+      }
     }
     const { error } = await supabase.from('user_progress').upsert(payload, { onConflict: 'user_id' });
     if (error) throw error;
