@@ -793,8 +793,11 @@ function startFlashcard() {
   document.getElementById('fc-start').classList.add('hidden');
   document.getElementById('fc-done').classList.add('hidden');
   document.getElementById('fc-play').classList.remove('hidden');
-  setTimeout(initCanvas, 50);
   showFlashcard();
+  setTimeout(() => {
+    const inp = document.getElementById('fc-write-input');
+    if (inp) inp.focus();
+  }, 100);
 }
 
 function getFcWord() { return document.getElementById('fc-word').textContent; }
@@ -805,7 +808,7 @@ function showFlashcard() {
   if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   // Clear writing pad for new word
-  clearCanvas();
+  clearWriteInput();
   const w = fcS.list[fcS.index];
   const card = document.getElementById('fc-card');
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
@@ -890,54 +893,39 @@ function markFlashcard(known) {
 
 function skipCard() { fcS.index++; showFlashcard(); }
 
-// ==================== Canvas Writing Pad ====================
-let fcCanvas = null;
-let fcCtx = null;
-let fcDrawing = false;
-let fcCanvasInited = false;
-
-function initCanvas() {
-  fcCanvas = document.getElementById('fc-canvas');
-  if (!fcCanvas) return;
-  const dpr = window.devicePixelRatio || 1;
-  const rect = fcCanvas.parentElement.getBoundingClientRect();
-  fcCanvas.width = rect.width * dpr;
-  fcCanvas.height = rect.height * dpr;
-  fcCtx = fcCanvas.getContext('2d');
-  fcCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  fcCtx.strokeStyle = '#3C3C3C';
-  fcCtx.lineWidth = 3;
-  fcCtx.lineCap = 'round';
-  fcCtx.lineJoin = 'round';
-
-  if (fcCanvasInited) return;
-  fcCanvasInited = true;
-
-  fcCanvas.addEventListener('pointerdown', (e) => {
-    fcDrawing = true;
-    const r = fcCanvas.getBoundingClientRect();
-    fcCtx.beginPath();
-    fcCtx.moveTo(e.clientX - r.left, e.clientY - r.top);
-    if (e.pressure > 0) fcCtx.lineWidth = Math.max(1, e.pressure * 6);
-  });
-  fcCanvas.addEventListener('pointermove', (e) => {
-    if (!fcDrawing) return;
-    e.preventDefault();
-    const r = fcCanvas.getBoundingClientRect();
-    if (e.pressure > 0) fcCtx.lineWidth = Math.max(1, e.pressure * 6);
-    fcCtx.lineTo(e.clientX - r.left, e.clientY - r.top);
-    fcCtx.stroke();
-  });
-  fcCanvas.addEventListener('pointerup', () => { fcDrawing = false; });
-  fcCanvas.addEventListener('pointerleave', () => { fcDrawing = false; });
+// ==================== Write Pad (native input, iPad Scribble friendly) ====================
+function clearWriteInput() {
+  const inp = document.getElementById('fc-write-input');
+  if (inp) { inp.value = ''; inp.focus(); }
+  const res = document.getElementById('fc-write-result');
+  if (res) res.classList.add('hidden');
 }
+window.clearWriteInput = clearWriteInput;
 
-function clearCanvas() {
-  if (!fcCanvas || !fcCtx) return;
-  const dpr = window.devicePixelRatio || 1;
-  fcCtx.clearRect(0, 0, fcCanvas.width / dpr, fcCanvas.height / dpr);
+function checkWriteWord() {
+  const inp = document.getElementById('fc-write-input');
+  const res = document.getElementById('fc-write-result');
+  if (!inp || !res) return;
+  const written = inp.value.trim().toLowerCase();
+  if (!written) return;
+  const target = fcS.list[fcS.index].w.toLowerCase();
+  const ok = written === target;
+  res.classList.remove('hidden', 'ok', 'no');
+  if (ok) {
+    res.classList.add('ok');
+    res.textContent = '✅ 正确！';
+    sfxCorrect();
+  } else {
+    res.classList.add('no');
+    const dist = levenshteinDistance(written, target);
+    if (dist <= 2 && written.length >= target.length * 0.6) {
+      res.textContent = '⚠️ 接近！正确答案：' + fcS.list[fcS.index].w;
+    } else {
+      res.textContent = '❌ 不对。正确答案：' + fcS.list[fcS.index].w;
+    }
+  }
 }
-window.clearCanvas = clearCanvas;
+window.checkWriteWord = checkWriteWord;
 
 function finishFlashcard() {
   document.getElementById('fc-play').classList.add('hidden');

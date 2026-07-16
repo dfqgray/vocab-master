@@ -195,10 +195,12 @@
       </div>
       <div class="fc-write-pad">
           <div class="fc-write-pad-label">✏️ 练习写词</div>
-          <canvas id="fc-canvas"></canvas>
+          <input type="text" id="fc-write-input" class="fc-write-input" placeholder="用笔写单词..." autocomplete="off" autocorrect="off" spellcheck="false">
           <div class="fc-write-pad-btns">
-            <button class="btn btn-gray btn-sm" onclick="window.clearCanvas()">🗑️ 清除</button>
+            <button class="btn btn-gray btn-sm" onclick="window.checkWriteWord()">✅ 检查</button>
+            <button class="btn btn-gray btn-sm" onclick="window.clearWriteInput()">🗑️ 清除</button>
           </div>
+          <div class="fc-write-result hidden" id="fc-write-result"></div>
         </div>
       </div>
       <div class="fc-controls">
