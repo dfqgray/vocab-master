@@ -362,6 +362,25 @@ function speak(word) {
   speechSynthesis.speak(u);
 }
 
+// Native audio from book CD (split from unit tracks)
+let nativeAudio = null;
+function playNativeAudio(word) {
+  if (!word) return;
+  const safe = word.replace(/[/ ]/g, '_');
+  const url = 'audio/' + safe + '.mp3';
+  // Stop any currently playing native audio
+  if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
+  // Also stop TTS
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  const a = new Audio(url);
+  a.onerror = () => {
+    // If file not found, fall back to TTS
+    speak(word);
+  };
+  nativeAudio = a;
+  a.play();
+}
+
 function setTTSVoice(name) {
   ttsVoiceName = name;
   localStorage.setItem('pvm_tts_voice', name);
@@ -627,6 +646,7 @@ window.toggleStar = toggleStar;
 window.markFlashcard = markFlashcard;
 window.skipCard = skipCard;
 window.speak = speak;
+window.playNativeAudio = playNativeAudio;
 window.setTTSVoice = setTTSVoice;
 window.getAvailableVoices = getAvailableVoices;
 window.getTTSEngineName = getTTSEngineName;
@@ -1063,7 +1083,8 @@ function renderWrongWords() {
       '<div><span class="we">' + w.w + '</span>' +
       (w.unit ? '<span class="ww-unit-tag">UNIT ' + w.unit + '</span>' : '') +
       '<span class="wp">' + w.p + '</span> ' +
-      '<span style="cursor:pointer" onclick="window.speak(\'' + w.w.replace(/'/g, "\\'") + '\')">🔊</span></div>' +
+      '<span style="cursor:pointer" onclick="window.speak(\'' + w.w.replace(/'/g, "\\'") + '\')">🔊</span>' +
+      '<span style="cursor:pointer;margin-left:4px" onclick="window.playNativeAudio(\'' + w.w.replace(/'/g, "\\'") + '\')" title="原声">🎙️</span></div>' +
       '<div class="wc">' + w.m + ' (' + w.pos + ')</div>' +
       (w.root ? '<div class="ww-root">🔍 ' + w.root + '</div>' : '') +
       (w.mn ? '<div class="ww-mn">💡 ' + w.mn + '</div>' : '') +
@@ -1157,6 +1178,7 @@ function renderWordList() {
       '<div class="wl-cn">' + w.m + '</div>' +
       '<span class="wl-star ' + (isStar ? 'on' : '') + '" onclick="event.stopPropagation();window.toggleStarWord(\'' + w.w.replace(/'/g, "\\'") + '\')">⭐</span>' +
       '<button class="wl-tts" onclick="event.stopPropagation();window.speak(\'' + w.w.replace(/'/g, "\\'") + '\')">🔊</button>' +
+      '<button class="wl-tts" onclick="event.stopPropagation();window.playNativeAudio(\'' + w.w.replace(/'/g, "\\'") + '\')" title="原声">🎙️</button>' +
       '<div class="wl-status" onclick="event.stopPropagation();window.cycleState(\'' + w.w.replace(/'/g, "\\'") + '\')" title="点击切换">' + icon + '</div>';
     c.appendChild(row);
   });
