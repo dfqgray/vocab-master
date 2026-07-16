@@ -15,7 +15,7 @@ let game = {
 };
 
 // Session state
-let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false, recognition: null, isListening: false };
+let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false, knownOnly: false, recognition: null, isListening: false };
 let qzS = { index: 0, total: 10, score: 0, questions: [], current: null };
 let wrS = { index: 0, total: 10, score: 0, words: [] };
 let mtS = { pairs: [], matched: 0, total: 6, startTime: 0, timerInt: null, firstSel: null, locked: false };
@@ -762,24 +762,35 @@ function toggleShuffle(el) { fcS.shuffle = !fcS.shuffle; el.classList.toggle('on
 function toggleStarredOnly(el) {
   fcS.starredOnly = !fcS.starredOnly;
   el.classList.toggle('on', fcS.starredOnly);
-  fcS.wrongOnly = false;
+  fcS.wrongOnly = false; fcS.knownOnly = false;
   document.getElementById('fc-opt-wrong').classList.remove('on');
+  document.getElementById('fc-opt-known').classList.remove('on');
 }
 function toggleWrongOnly(el) {
   fcS.wrongOnly = !fcS.wrongOnly;
   el.classList.toggle('on', fcS.wrongOnly);
-  fcS.starredOnly = false;
+  fcS.starredOnly = false; fcS.knownOnly = false;
   document.getElementById('fc-opt-starred').classList.remove('on');
+  document.getElementById('fc-opt-known').classList.remove('on');
+}
+function toggleKnownOnly(el) {
+  fcS.knownOnly = !fcS.knownOnly;
+  el.classList.toggle('on', fcS.knownOnly);
+  fcS.starredOnly = false; fcS.wrongOnly = false;
+  document.getElementById('fc-opt-starred').classList.remove('on');
+  document.getElementById('fc-opt-wrong').classList.remove('on');
 }
 window.toggleShuffle = toggleShuffle;
 window.toggleStarredOnly = toggleStarredOnly;
 window.toggleWrongOnly = toggleWrongOnly;
+window.toggleKnownOnly = toggleKnownOnly;
 
 function startFlashcard() {
   let pool;
   let unitPool = getUnitPool(fcSelectedUnits);
   if (fcS.starredOnly) pool = unitPool.filter(w => starredWords.has(w.w));
   else if (fcS.wrongOnly) pool = [...wrongWords].map(ww => WORDS.find(w => w.w === ww)).filter(Boolean).filter(w => fcSelectedUnits.length === 0 || fcSelectedUnits.includes(w.unit || 1));
+  else if (fcS.knownOnly) pool = unitPool.filter(w => wordStates[w.w] === 'known');
   else pool = unitPool.filter(w => wordStates[w.w] !== 'known');
   if (pool.length === 0) pool = [...unitPool];
   pool.sort(() => Math.random() - 0.5);
