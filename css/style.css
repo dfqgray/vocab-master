@@ -128,33 +128,34 @@ a{text-decoration:none}
 
 /* ============ Flashcard ============ */
 .fc-card-wrap{perspective:1200px;margin-bottom:20px}
-.fc-card{position:relative;width:100%;height:340px;cursor:pointer;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.fc-card{position:relative;width:100%;height:520px;cursor:pointer;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1)}
 .fc-card.flipped{transform:rotateY(180deg)}
 .fc-card.swipe-left{transform:translateX(-120%) rotate(-15deg);opacity:0}
 .fc-card.swipe-right{transform:translateX(120%) rotate(15deg);opacity:0}
-.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
 .fc-front{background:#fff}
 .fc-back{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;transform:rotateY(180deg)}
-.fc-word{font-size:34px;font-weight:900;margin-bottom:4px}
-.fc-phon{font-size:16px;color:var(--t2);margin-bottom:8px}
-.fc-tts{background:none;border:none;font-size:22px;cursor:pointer;opacity:.5;transition:all .2s;padding:4px}
+.fc-word{font-size:52px;font-weight:900;margin-bottom:6px}
+.fc-phon{font-size:22px;color:var(--t2);margin-bottom:12px}
+.fc-tts{background:none;border:none;font-size:30px;cursor:pointer;opacity:.5;transition:all .2s;padding:6px}
 .fc-tts:hover{opacity:1;transform:scale(1.1)}
-.fc-hint{font-size:12px;color:var(--t3);position:absolute;bottom:16px}
-.fc-star{position:absolute;top:16px;right:16px;font-size:24px;cursor:pointer;opacity:.3;transition:all .2s}
+.fc-hint{font-size:15px;color:var(--t3);position:absolute;bottom:20px}
+.fc-star{position:absolute;top:18px;right:18px;font-size:30px;cursor:pointer;opacity:.3;transition:all .2s}
 .fc-star.on{opacity:1}
 .fc-back .fc-meaning{font-size:22px;font-weight:800;margin-bottom:8px;text-align:center}
 .fc-back .fc-pos{font-size:12px;opacity:.8;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:20px;margin-bottom:12px}
 .fc-back .fc-example{font-size:14px;opacity:.95;text-align:center;line-height:1.5;font-style:italic;max-width:300px}
 /* V2: book-structured back face */
-.fc-back-section{margin-bottom:8px;max-width:320px;width:100%}
-.fc-back-label{font-size:10px;font-weight:800;opacity:.6;margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
-.fc-back-text{font-size:12px;font-weight:600;line-height:1.5;word-break:break-all}
-.fc-back-pos{font-size:11px;opacity:.7;margin-bottom:4px;text-align:center}
-.fc-back-meaning{font-size:22px;font-weight:800;text-align:center;line-height:1.3}
-.fc-back-example{font-size:13px;font-weight:500;line-height:1.6;text-align:center;font-style:italic}
+.fc-back-section{margin-bottom:10px;max-width:460px;width:100%}
+.fc-back-label{font-size:13px;font-weight:800;opacity:.6;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+.fc-back-text{font-size:16px;font-weight:600;line-height:1.6;word-break:break-all}
+.fc-back-pos{font-size:15px;opacity:.7;margin-bottom:6px;text-align:center}
+.fc-back-meaning{font-size:36px;font-weight:800;text-align:center;line-height:1.3}
+.fc-back-example{font-size:18px;font-weight:500;line-height:1.7;text-align:center;font-style:italic}
 .fc-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.fc-controls .btn{font-size:16px;padding:15px 28px}
 .fc-options{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
-.fc-opt-btn{background:#fff;border:2px solid var(--bd);border-radius:var(--rx);padding:6px 12px;font-size:12px;color:var(--t2);cursor:pointer;box-shadow:0 2px 0 var(--bd);transition:all .1s}
+.fc-opt-btn{padding:8px 16px;font-size:14px;background:#fff;border:2px solid var(--bd);border-radius:var(--rx);color:var(--t2);cursor:pointer;box-shadow:0 2px 0 var(--bd);transition:all .1s}
 .fc-opt-btn:active{transform:translateY(2px);box-shadow:0 0 0 var(--bd)}
 .fc-opt-btn.on{background:var(--blue-l);color:var(--blue-d);border-color:var(--blue)}
 
@@ -172,7 +173,7 @@ a{text-decoration:none}
 .fc-unit-chip.all.on{background:var(--blue);color:#fff;border-color:var(--blue-d)}
 .fc-unit-chip.empty{opacity:.35;pointer-events:none}
 .fc-unit-info{font-size:12px;color:var(--t3);margin-top:6px;font-weight:600}
-.fc-unit-badge{position:absolute;top:10px;right:10px;background:var(--blue-l);color:var(--blue-d);font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px}
+.fc-unit-badge{position:absolute;top:12px;right:12px;background:var(--blue-l);color:var(--blue-d);font-size:13px;font-weight:800;padding:3px 10px;border-radius:10px}
 .fc-tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;margin:1px 2px;border-radius:6px;background:rgba(255,255,255,.2);color:rgba(255,255,255,.9);line-height:1.4;max-width:100%;word-break:break-all}
 
 /* Wrong Words extras */
@@ -363,7 +364,7 @@ a{text-decoration:none}
 #fc-speak-btn.listening{background:var(--red);color:#fff;animation:micPulse .8s ease-in-out infinite}
 #fc-speak-btn.success{background:var(--green);color:#fff;box-shadow:0 0 12px var(--green)}
 #fc-speak-btn.error{background:var(--red);color:#fff;animation:shake .3s ease}
-.fc-speak-feedback{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;margin-top:10px;border-radius:var(--rx);font-size:13px;font-weight:700;transition:all .2s}
+.fc-speak-feedback{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;margin-top:12px;border-radius:var(--rx);font-size:16px;font-weight:700;transition:all .2s}
 .fc-speak-feedback.correct{background:var(--green-l);color:var(--green-d)}
 .fc-speak-feedback.close{background:var(--yellow-l);color:var(--yellow-d)}
 .fc-speak-feedback.wrong{background:var(--red-l);color:var(--red-d)}
@@ -384,8 +385,10 @@ a{text-decoration:none}
   .hero h1{font-size:22px}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .mode-grid{grid-template-columns:1fr}
-  .fc-card{height:300px}
-  .fc-word{font-size:28px}
+  .fc-card{height:380px}
+  .fc-word{font-size:38px}
+  .fc-back-meaning{font-size:28px}
+  .fc-back-example{font-size:15px}
   .qz-display{font-size:24px}
   .ach-grid{grid-template-columns:1fr}
   .match-grid{gap:6px}
