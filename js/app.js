@@ -849,11 +849,8 @@ function flipCard() {
   const card = document.getElementById('fc-card');
   card.classList.toggle('flipped');
   sfxFlip();
-  if (card.classList.contains('flipped')) {
-    // Auto-play native audio when flipping to back
-    playNativeAudio(fcS.list[fcS.index].w);
-  } else {
-    // Stop audio when flipping back to front
+  // Stop audio when flipping back to front
+  if (!card.classList.contains('flipped')) {
     if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
