@@ -800,6 +800,9 @@ function getFcWord() { return document.getElementById('fc-word').textContent; }
 
 function showFlashcard() {
   if (fcS.index >= fcS.total) return finishFlashcard();
+  // Immediately stop any previous audio (native + TTS)
+  if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
   const w = fcS.list[fcS.index];
   const card = document.getElementById('fc-card');
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
@@ -862,6 +865,9 @@ function toggleStar() {
 }
 
 function markFlashcard(known) {
+  // Immediately stop any playing audio
+  if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
   const w = fcS.list[fcS.index];
   const card = document.getElementById('fc-card');
   if (known) {
