@@ -135,9 +135,10 @@ async function cloudUploadProgress() {
     // Only include custom_words if user has imported custom words beyond defaults
     if (window.__hasCustomWords && window.__hasCustomWords()) {
       const extraWords = window.__getExtraWords ? window.__getExtraWords() : [];
-      if (extraWords.length > 0) {
-        payload.custom_words = extraWords;
-      }
+      payload.custom_words = extraWords.length > 0 ? extraWords : [];
+    } else {
+      // No extra words — explicitly clear stale cloud data
+      payload.custom_words = [];
     }
     const { error } = await supabase.from('user_progress').upsert(payload, { onConflict: 'user_id' });
     if (error) throw error;
