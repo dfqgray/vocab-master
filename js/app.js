@@ -60,7 +60,7 @@ window.__hasCustomWords = () => {
 };
 
 // ==================== Storage ====================
-const WORDS_VERSION = 'v5_2452_etymology';
+const WORDS_VERSION = 'v6_2028_pdf_book';
 
 function saveLocal() {
   localStorage.setItem('pvm_words', JSON.stringify(WORDS));
