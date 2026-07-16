@@ -398,6 +398,7 @@ function getAvailableVoices() {
 
 // ==================== Speech Recognition ====================
 let SpeechRecognitionAPI = null;
+let recognitionTranscripts = [];
 (function detectSpeechRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SR) { SpeechRecognitionAPI = SR; }
@@ -413,7 +414,7 @@ function createRecognition() {
   rec.lang = 'en-US';
   rec.interimResults = false;
   rec.maxAlternatives = 1;
-  rec.continuous = false;
+  rec.continuous = true;
   return rec;
 }
 
@@ -433,30 +434,34 @@ function startListening() {
     return;
   }
 
+  recognitionTranscripts = [];
   fcS.recognition = rec;
   fcS.isListening = true;
   updateSpeakUI();
 
   rec.onresult = (event) => {
-    const transcript = (event.results[0][0].transcript || '').trim();
-    fcS.isListening = false;
-    fcS.recognition = null;
-    updateSpeakUI();
-    showRecognitionResult(transcript);
+    // Accumulate all final transcripts
+    for (let i = 0; i < event.results.length; i++) {
+      const transcript = (event.results[i][0].transcript || '').trim();
+      if (transcript) recognitionTranscripts.push(transcript);
+    }
   };
 
   rec.onerror = (event) => {
-    fcS.isListening = false;
-    fcS.recognition = null;
-    updateSpeakUI();
-    if (event.error === 'no-speech') {
-      showToast('未检测到语音，请再试一次');
-    } else if (event.error === 'aborted') {
-      // User stopped intentionally, no message needed
+    if (event.error === 'aborted') {
+      // User aborted, no message needed
+    } else if (event.error === 'no-speech') {
+      // Continuous mode: wait for speech, don't show error
     } else if (event.error === 'not-allowed') {
       showToast('麦克风权限未授权，请在浏览器设置中允许');
+      fcS.isListening = false;
+      fcS.recognition = null;
+      updateSpeakUI();
     } else {
       showToast('识别出错: ' + event.error);
+      fcS.isListening = false;
+      fcS.recognition = null;
+      updateSpeakUI();
     }
   };
 
@@ -464,6 +469,11 @@ function startListening() {
     fcS.isListening = false;
     fcS.recognition = null;
     updateSpeakUI();
+    // Process accumulated result when recognition ends
+    const transcript = recognitionTranscripts.join(' ').trim();
+    if (transcript) {
+      showRecognitionResult(transcript);
+    }
   };
 
   rec.start();
@@ -471,11 +481,8 @@ function startListening() {
 
 function stopListening() {
   if (fcS.recognition) {
-    try { fcS.recognition.abort(); } catch (e) { /* ignore */ }
-    fcS.recognition = null;
+    try { fcS.recognition.stop(); } catch (e) { /* ignore */ }
   }
-  fcS.isListening = false;
-  updateSpeakUI();
 }
 
 function toggleListening() {
@@ -522,10 +529,10 @@ function updateSpeakUI() {
   if (fcS.isListening) {
     btn.classList.add('listening');
     btn.classList.remove('success', 'error');
-    btn.textContent = '🔴 聆听中';
+    btn.textContent = '🔴 停止录音';
   } else {
     btn.classList.remove('listening', 'success', 'error');
-    btn.textContent = '🎤 朗读';
+    btn.textContent = '🎤 开始录音';
   }
 }
 
@@ -725,17 +732,25 @@ function toggleFcUnit(u) {
     if (idx >= 0) fcSelectedUnits.splice(idx, 1);
     else fcSelectedUnits.push(u);
   }
+  // Auto-adjust session size if it exceeds new total
+  const total = getUnitPool(fcSelectedUnits).length;
+  if (fcSessionSize > total) fcSessionSize = total;
   renderFcUnitSelector();
+  renderFcSizeSelector();
 }
 window.toggleFcUnit = toggleFcUnit;
 
 function renderFcSizeSelector() {
   const row = document.getElementById('fc-size-row');
   if (!row) return;
-  const sizes = [10, 15, 20, 30, 50];
+  const unitPool = getUnitPool(fcSelectedUnits);
+  const total = unitPool.length;
+  const fixedSizes = [10, 15, 20, 30, 50].filter(s => s < total);
+  const sizes = [...fixedSizes, total];
   let html = '';
   sizes.forEach(s => {
-    html += '<span class="fc-size-chip' + (fcSessionSize === s ? ' on' : '') + '" onclick="selectFcSize(' + s + ')">' + s + ' 词</span>';
+    const isMax = s >= total;
+    html += '<span class="fc-size-chip' + (fcSessionSize === s ? ' on' : '') + '" onclick="selectFcSize(' + s + ')">' + (isMax ? '全部 ' : '') + s + ' 词</span>';
   });
   row.innerHTML = html;
 }
