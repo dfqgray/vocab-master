@@ -906,23 +906,32 @@ function checkWriteWord() {
   const inp = document.getElementById('fc-write-input');
   const res = document.getElementById('fc-write-result');
   if (!inp || !res) return;
-  const written = inp.value.trim().toLowerCase();
-  if (!written) return;
+  const raw = inp.value.trim();
+  if (!raw) return;
   const target = fcS.list[fcS.index].w.toLowerCase();
-  const ok = written === target;
+  // Split by spaces / newlines, filter empty
+  const words = raw.split(/[\s,，、]+/).filter(Boolean).map(w => w.toLowerCase());
+  if (words.length === 0) return;
+
   res.classList.remove('hidden', 'ok', 'no');
-  if (ok) {
+
+  // Check each word
+  const wrongIdx = [];
+  words.forEach((w, i) => { if (w !== target) wrongIdx.push(i); });
+
+  if (wrongIdx.length === 0) {
     res.classList.add('ok');
-    res.textContent = '✅ 正确！';
+    res.textContent = words.length > 1
+      ? '✅ 写了 ' + words.length + ' 遍，全部正确！'
+      : '✅ 正确！';
     sfxCorrect();
+  } else if (wrongIdx.length === words.length) {
+    res.classList.add('no');
+    res.textContent = '❌ 都不对。正确答案：' + fcS.list[fcS.index].w;
   } else {
     res.classList.add('no');
-    const dist = levenshteinDistance(written, target);
-    if (dist <= 2 && written.length >= target.length * 0.6) {
-      res.textContent = '⚠️ 接近！正确答案：' + fcS.list[fcS.index].w;
-    } else {
-      res.textContent = '❌ 不对。正确答案：' + fcS.list[fcS.index].w;
-    }
+    const bad = wrongIdx.map(i => '第' + (i + 1) + '个').join('、');
+    res.textContent = '⚠️ ' + bad + ' 不对，应为：' + fcS.list[fcS.index].w;
   }
 }
 window.checkWriteWord = checkWriteWord;
