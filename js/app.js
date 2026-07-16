@@ -1023,7 +1023,7 @@ function showQuestion() {
   } else {
     document.getElementById('qz-dict').classList.remove('hidden');
     document.getElementById('qz-choice').classList.add('hidden');
-    document.getElementById('qz-dict-answer').textContent = q.word.w;
+    window.__qzDictWord = q.word.w;
     document.getElementById('qz-dict-input').value = '';
     document.getElementById('qz-dict-input').classList.remove('ok', 'no');
     document.getElementById('qz-dict-feedback').classList.add('hidden');
