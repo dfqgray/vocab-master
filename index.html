@@ -149,8 +149,9 @@
         <span class="prog-count" id="fc-count">0/0</span>
         <span style="font-size:22px;cursor:pointer" id="fc-star" onclick="toggleStar()">⭐</span>
       </div>
-      <div class="fc-card-wrap">
-        <div class="fc-card" id="fc-card" onclick="flipCard()">
+      <div class="fc-main-area">
+        <div class="fc-card-wrap">
+          <div class="fc-card" id="fc-card" onclick="flipCard()">
           <div class="fc-face fc-front">
             <span class="fc-unit-badge" id="fc-unit-badge"></span>
             <div class="fc-word" id="fc-word"></div>
@@ -190,6 +191,14 @@
               <div class="fc-back-label" id="fc-other-label"></div>
               <div class="fc-back-text" id="fc-other"></div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-write-pad">
+          <div class="fc-write-pad-label">✏️ 练习写词</div>
+          <canvas id="fc-canvas"></canvas>
+          <div class="fc-write-pad-btns">
+            <button class="btn btn-gray btn-sm" onclick="window.clearCanvas()">🗑️ 清除</button>
           </div>
         </div>
       </div>

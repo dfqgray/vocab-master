@@ -145,6 +145,14 @@ a{text-decoration:none}
 .fc-back .fc-meaning{font-size:22px;font-weight:800;margin-bottom:8px;text-align:center}
 .fc-back .fc-pos{font-size:12px;opacity:.8;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:20px;margin-bottom:12px}
 .fc-back .fc-example{font-size:14px;opacity:.95;text-align:center;line-height:1.5;font-style:italic;max-width:300px}
+/* Main area: card + write pad side by side */
+.fc-main-area{display:flex;gap:16px;align-items:stretch;margin-bottom:20px}
+.fc-main-area .fc-card-wrap{flex:1;min-width:0;margin-bottom:0}
+/* Write Pad */
+.fc-write-pad{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.fc-write-pad-label{font-size:14px;font-weight:800;color:var(--t2);text-align:center}
+.fc-write-pad canvas{flex:1;width:100%;background:#fff;border-radius:16px;border:3px solid var(--bd);cursor:crosshair;touch-action:none;min-height:200px}
+.fc-write-pad-btns{display:flex;gap:6px;justify-content:center}
 /* V2: book-structured back face */
 .fc-back-section{margin-bottom:10px;max-width:460px;width:100%}
 .fc-back-label{font-size:13px;font-weight:800;opacity:.6;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
@@ -385,6 +393,9 @@ a{text-decoration:none}
   .hero h1{font-size:22px}
   .stats-row{grid-template-columns:repeat(2,1fr)}
   .mode-grid{grid-template-columns:1fr}
+  .fc-main-area{flex-direction:column}
+  .fc-write-pad{width:100%;flex-shrink:1}
+  .fc-write-pad canvas{min-height:160px;max-height:260px}
   .fc-card{height:380px}
   .fc-word{font-size:38px}
   .fc-back-meaning{font-size:28px}

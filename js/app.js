@@ -793,6 +793,7 @@ function startFlashcard() {
   document.getElementById('fc-start').classList.add('hidden');
   document.getElementById('fc-done').classList.add('hidden');
   document.getElementById('fc-play').classList.remove('hidden');
+  setTimeout(initCanvas, 50);
   showFlashcard();
 }
 
@@ -803,6 +804,8 @@ function showFlashcard() {
   // Immediately stop any previous audio (native + TTS)
   if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
+  // Clear writing pad for new word
+  clearCanvas();
   const w = fcS.list[fcS.index];
   const card = document.getElementById('fc-card');
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
@@ -889,6 +892,55 @@ function markFlashcard(known) {
 }
 
 function skipCard() { fcS.index++; showFlashcard(); }
+
+// ==================== Canvas Writing Pad ====================
+let fcCanvas = null;
+let fcCtx = null;
+let fcDrawing = false;
+let fcCanvasInited = false;
+
+function initCanvas() {
+  fcCanvas = document.getElementById('fc-canvas');
+  if (!fcCanvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = fcCanvas.parentElement.getBoundingClientRect();
+  fcCanvas.width = rect.width * dpr;
+  fcCanvas.height = rect.height * dpr;
+  fcCtx = fcCanvas.getContext('2d');
+  fcCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  fcCtx.strokeStyle = '#3C3C3C';
+  fcCtx.lineWidth = 3;
+  fcCtx.lineCap = 'round';
+  fcCtx.lineJoin = 'round';
+
+  if (fcCanvasInited) return;
+  fcCanvasInited = true;
+
+  fcCanvas.addEventListener('pointerdown', (e) => {
+    fcDrawing = true;
+    const r = fcCanvas.getBoundingClientRect();
+    fcCtx.beginPath();
+    fcCtx.moveTo(e.clientX - r.left, e.clientY - r.top);
+    if (e.pressure > 0) fcCtx.lineWidth = Math.max(1, e.pressure * 6);
+  });
+  fcCanvas.addEventListener('pointermove', (e) => {
+    if (!fcDrawing) return;
+    e.preventDefault();
+    const r = fcCanvas.getBoundingClientRect();
+    if (e.pressure > 0) fcCtx.lineWidth = Math.max(1, e.pressure * 6);
+    fcCtx.lineTo(e.clientX - r.left, e.clientY - r.top);
+    fcCtx.stroke();
+  });
+  fcCanvas.addEventListener('pointerup', () => { fcDrawing = false; });
+  fcCanvas.addEventListener('pointerleave', () => { fcDrawing = false; });
+}
+
+function clearCanvas() {
+  if (!fcCanvas || !fcCtx) return;
+  const dpr = window.devicePixelRatio || 1;
+  fcCtx.clearRect(0, 0, fcCanvas.width / dpr, fcCanvas.height / dpr);
+}
+window.clearCanvas = clearCanvas;
 
 function finishFlashcard() {
   document.getElementById('fc-play').classList.add('hidden');
