@@ -151,7 +151,7 @@ a{text-decoration:none}
 /* Write Pad */
 .fc-write-pad{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
 .fc-write-pad-label{font-size:14px;font-weight:800;color:var(--t2);text-align:center}
-.fc-write-input{flex:1;width:100%;min-height:200px;background:#fff;border-radius:16px;border:3px dashed var(--bd);font-size:28px;font-weight:800;text-align:center;padding:12px;color:var(--text)}
+.fc-write-input{flex:1;width:100%;background:#fff;border-radius:16px;border:3px dashed var(--bd);font-size:28px;font-weight:800;text-align:center;padding:12px;color:var(--text)}
 .fc-write-input:focus{border-color:var(--blue);border-style:solid;outline:none;background:#fafeff}
 .fc-write-input::placeholder{color:var(--t3);font-size:16px;font-weight:600}
 .fc-write-pad-btns{display:flex;gap:6px;justify-content:center}
@@ -159,12 +159,12 @@ a{text-decoration:none}
 .fc-write-result.ok{background:var(--green-l);color:var(--green-d)}
 .fc-write-result.no{background:var(--red-l);color:var(--red-d)}
 /* V2: book-structured back face */
-.fc-back-section{margin-bottom:10px;max-width:460px;width:100%}
-.fc-back-label{font-size:13px;font-weight:800;opacity:.6;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
-.fc-back-text{font-size:16px;font-weight:600;line-height:1.6;word-break:break-all}
-.fc-back-pos{font-size:15px;opacity:.7;margin-bottom:6px;text-align:center}
-.fc-back-meaning{font-size:36px;font-weight:800;text-align:center;line-height:1.3}
-.fc-back-example{font-size:18px;font-weight:500;line-height:1.7;text-align:center;font-style:italic}
+.fc-back-section{margin-bottom:12px;max-width:500px;width:100%}
+.fc-back-label{font-size:15px;font-weight:800;opacity:.6;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.fc-back-text{font-size:18px;font-weight:600;line-height:1.7;word-break:break-all}
+.fc-back-pos{font-size:17px;opacity:.7;margin-bottom:8px;text-align:center}
+.fc-back-meaning{font-size:44px;font-weight:800;text-align:center;line-height:1.3}
+.fc-back-example{font-size:22px;font-weight:500;line-height:1.7;text-align:center;font-style:italic}
 .fc-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .fc-controls .btn{font-size:16px;padding:15px 28px}
 .fc-options{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
@@ -403,8 +403,8 @@ a{text-decoration:none}
   .fc-write-input{min-height:100px;max-height:180px;font-size:24px}
   .fc-card{height:380px}
   .fc-word{font-size:38px}
-  .fc-back-meaning{font-size:28px}
-  .fc-back-example{font-size:15px}
+  .fc-back-meaning{font-size:32px}
+  .fc-back-example{font-size:17px}
   .qz-display{font-size:24px}
   .ach-grid{grid-template-columns:1fr}
   .match-grid{gap:6px}
