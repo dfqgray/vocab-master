@@ -407,8 +407,11 @@
       </div>
     </div>
     <div class="ww-unit-bar">
-      <select class="ww-unit-select" id="ww-unit-select" onchange="onWwUnitChange()"></select>
-      <span class="ww-unit-tag" id="ww-unit-tag" style="display:none"></span>
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">选择单元：</span>
+        <div class="fc-unit-row" id="ww-unit-row"></div>
+        <div class="fc-unit-info" id="ww-unit-info"></div>
+      </div>
     </div>
     <div class="ww-list" id="ww-list"></div>
   </div>
@@ -423,7 +426,11 @@
         <span class="si">🔍</span>
         <input type="text" id="wl-search" placeholder="搜索单词..." oninput="renderWordList()">
       </div>
-      <select class="ww-unit-select" id="wl-unit-select" onchange="renderWordList()"></select>
+    </div>
+    <div class="fc-unit-selector">
+      <span class="fc-unit-label">选择单元：</span>
+      <div class="fc-unit-row" id="wl-unit-row"></div>
+      <div class="fc-unit-info" id="wl-unit-info"></div>
     </div>
     <div class="wl-tabs">
       <button class="wl-tab active" onclick="setWlFilter('all', this)">全部</button>

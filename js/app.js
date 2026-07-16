@@ -20,12 +20,13 @@ let qzS = { index: 0, total: 10, score: 0, questions: [], current: null };
 let wrS = { index: 0, total: 10, score: 0, words: [] };
 let mtS = { pairs: [], matched: 0, total: 6, startTime: 0, timerInt: null, firstSel: null, locked: false };
 
-let fcSelectedUnit = 0;
+let fcSelectedUnits = [];
 let fcSessionSize = 15;
-let qzSelectedUnit = 0;
-let mtSelectedUnit = 0;
-let wrSelectedUnit = 0;
-let wwSelectedUnit = 0;
+let qzSelectedUnits = [];
+let mtSelectedUnits = [];
+let wrSelectedUnits = [];
+let wwSelectedUnits = [];
+let wlSelectedUnits = [];
 let wlFilter = 'all';
 let authMode = 'login';
 
@@ -618,35 +619,66 @@ function updateHome() {
 }
 
 // ==================== UNIT Helpers ====================
-function getUnitPool(selectedUnit) {
-  return selectedUnit > 0 ? WORDS.filter(w => w.unit === selectedUnit) : [...WORDS];
+function getUnitPool(selectedUnits) {
+  if (!selectedUnits || selectedUnits.length === 0) return [...WORDS];
+  return WORDS.filter(w => selectedUnits.includes(w.unit || 1));
 }
 
-function renderUnitChips(rowId, infoId, selectedUnit, onSelectFn) {
+function renderUnitChips(rowId, infoId, selectedUnits, toggleFnName) {
   const row = document.getElementById(rowId);
   if (!row) return;
   const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
-  let html = '<span class="fc-unit-chip all' + (selectedUnit === 0 ? ' on' : '') + '" onclick="' + onSelectFn + '(0)">全部</span>';
+  const allSelected = selectedUnits.length === 0;
+  let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.' + toggleFnName + '(0)">全部</span>';
   units.forEach(u => {
     const count = WORDS.filter(w => w.unit === u).length;
-    html += '<span class="fc-unit-chip' + (selectedUnit === u ? ' on' : '') + '" onclick="' + onSelectFn + '(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
+    const isOn = selectedUnits.includes(u);
+    html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.' + toggleFnName + '(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
   });
   row.innerHTML = html;
   const info = document.getElementById(infoId);
   if (info) {
-    info.textContent = selectedUnit === 0
-      ? '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）'
-      : 'UNIT ' + selectedUnit + '：' + WORDS.filter(w => w.unit === selectedUnit).length + ' 词';
+    if (allSelected) {
+      info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
+    } else {
+      const sorted = [...selectedUnits].sort((a, b) => a - b);
+      const totalWords = WORDS.filter(w => selectedUnits.includes(w.unit || 1)).length;
+      info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词）';
+    }
   }
 }
 
-// Expose select functions globally
-function selectQzUnit(u) { qzSelectedUnit = u; renderUnitChips('qz-unit-row', 'qz-unit-info', qzSelectedUnit, 'selectQzUnit'); }
-function selectMtUnit(u) { mtSelectedUnit = u; renderUnitChips('mt-unit-row', 'mt-unit-info', mtSelectedUnit, 'selectMtUnit'); }
-function selectWrUnit(u) { wrSelectedUnit = u; renderUnitChips('wr-unit-row', 'wr-unit-info', wrSelectedUnit, 'selectWrUnit'); }
-window.selectQzUnit = selectQzUnit;
-window.selectMtUnit = selectMtUnit;
-window.selectWrUnit = selectWrUnit;
+// Multi-select toggle functions for Quiz, Match, Write
+function toggleQzUnit(u) {
+  if (u === 0) { qzSelectedUnits = []; }
+  else {
+    const idx = qzSelectedUnits.indexOf(u);
+    if (idx >= 0) qzSelectedUnits.splice(idx, 1);
+    else qzSelectedUnits.push(u);
+  }
+  renderUnitChips('qz-unit-row', 'qz-unit-info', qzSelectedUnits, 'toggleQzUnit');
+}
+function toggleMtUnit(u) {
+  if (u === 0) { mtSelectedUnits = []; }
+  else {
+    const idx = mtSelectedUnits.indexOf(u);
+    if (idx >= 0) mtSelectedUnits.splice(idx, 1);
+    else mtSelectedUnits.push(u);
+  }
+  renderUnitChips('mt-unit-row', 'mt-unit-info', mtSelectedUnits, 'toggleMtUnit');
+}
+function toggleWrUnit(u) {
+  if (u === 0) { wrSelectedUnits = []; }
+  else {
+    const idx = wrSelectedUnits.indexOf(u);
+    if (idx >= 0) wrSelectedUnits.splice(idx, 1);
+    else wrSelectedUnits.push(u);
+  }
+  renderUnitChips('wr-unit-row', 'wr-unit-info', wrSelectedUnits, 'toggleWrUnit');
+}
+window.toggleQzUnit = toggleQzUnit;
+window.toggleMtUnit = toggleMtUnit;
+window.toggleWrUnit = toggleWrUnit;
 
 // ==================== Flashcard ====================
 function resetFlashcard() {
@@ -665,26 +697,37 @@ function renderFcUnitSelector() {
   const row = document.getElementById('fc-unit-row');
   if (!row) return;
   const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
-  let html = '<span class="fc-unit-chip all' + (fcSelectedUnit === 0 ? ' on' : '') + '" onclick="selectFcUnit(0)">全部</span>';
+  const allSelected = fcSelectedUnits.length === 0;
+  let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.toggleFcUnit(0)">全部</span>';
   units.forEach(u => {
     const count = WORDS.filter(w => w.unit === u).length;
-    html += '<span class="fc-unit-chip' + (fcSelectedUnit === u ? ' on' : '') + '" onclick="selectFcUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
+    const isOn = fcSelectedUnits.includes(u);
+    html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.toggleFcUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
   });
   row.innerHTML = html;
   const info = document.getElementById('fc-unit-info');
   if (info) {
-    if (fcSelectedUnit === 0) {
+    if (allSelected) {
       info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
     } else {
-      const cnt = WORDS.filter(w => w.unit === fcSelectedUnit).length;
-      const known = WORDS.filter(w => w.unit === fcSelectedUnit && wordStates[w.w] === 'known').length;
-      info.textContent = 'UNIT ' + fcSelectedUnit + '：' + cnt + ' 词，已掌握 ' + known + ' 词';
+      const sorted = [...fcSelectedUnits].sort((a, b) => a - b);
+      const totalWords = WORDS.filter(w => fcSelectedUnits.includes(w.unit || 1)).length;
+      const knownWords = WORDS.filter(w => fcSelectedUnits.includes(w.unit || 1) && wordStates[w.w] === 'known').length;
+      info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词，已掌握 ' + knownWords + ' 词）';
     }
   }
 }
 
-function selectFcUnit(u) { fcSelectedUnit = u; renderFcUnitSelector(); }
-window.selectFcUnit = selectFcUnit;
+function toggleFcUnit(u) {
+  if (u === 0) { fcSelectedUnits = []; }
+  else {
+    const idx = fcSelectedUnits.indexOf(u);
+    if (idx >= 0) fcSelectedUnits.splice(idx, 1);
+    else fcSelectedUnits.push(u);
+  }
+  renderFcUnitSelector();
+}
+window.toggleFcUnit = toggleFcUnit;
 
 function renderFcSizeSelector() {
   const row = document.getElementById('fc-size-row');
@@ -719,9 +762,9 @@ window.toggleWrongOnly = toggleWrongOnly;
 
 function startFlashcard() {
   let pool;
-  let unitPool = fcSelectedUnit > 0 ? WORDS.filter(w => w.unit === fcSelectedUnit) : WORDS;
+  let unitPool = getUnitPool(fcSelectedUnits);
   if (fcS.starredOnly) pool = unitPool.filter(w => starredWords.has(w.w));
-  else if (fcS.wrongOnly) pool = [...wrongWords].map(ww => WORDS.find(w => w.w === ww)).filter(Boolean).filter(w => fcSelectedUnit === 0 || w.unit === fcSelectedUnit);
+  else if (fcS.wrongOnly) pool = [...wrongWords].map(ww => WORDS.find(w => w.w === ww)).filter(Boolean).filter(w => fcSelectedUnits.length === 0 || fcSelectedUnits.includes(w.unit || 1));
   else pool = unitPool.filter(w => wordStates[w.w] !== 'known');
   if (pool.length === 0) pool = [...unitPool];
   pool.sort(() => Math.random() - 0.5);
@@ -862,7 +905,7 @@ function resetQuiz() {
   document.getElementById('qz-start').classList.remove('hidden');
   document.getElementById('qz-play').classList.add('hidden');
   document.getElementById('qz-done').classList.add('hidden');
-  renderUnitChips('qz-unit-row', 'qz-unit-info', qzSelectedUnit, 'selectQzUnit');
+  renderUnitChips('qz-unit-row', 'qz-unit-info', qzSelectedUnits, 'toggleQzUnit');
 }
 
 function renderHearts() {
@@ -878,7 +921,7 @@ function renderHearts() {
 
 function startQuiz() {
   qzS.index = 0; qzS.score = 0;
-  const unitPool = getUnitPool(qzSelectedUnit);
+  const unitPool = getUnitPool(qzSelectedUnits);
   qzS.total = Math.min(10, unitPool.length);
   qzS.questions = [];
   const pool = [...unitPool].sort(() => Math.random() - 0.5).slice(0, qzS.total);
@@ -907,7 +950,7 @@ function showQuestion() {
     document.getElementById('qz-dict').classList.add('hidden');
     document.getElementById('qz-word').textContent = q.word.w;
     const correct = q.word.m;
-    const wrongs = getUnitPool(qzSelectedUnit).filter(w => w.w !== q.word.w).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.m);
+    const wrongs = getUnitPool(qzSelectedUnits).filter(w => w.w !== q.word.w).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.m);
     const options = [correct, ...wrongs].sort(() => Math.random() - 0.5);
     const labels = ['A', 'B', 'C', 'D'];
     const c = document.getElementById('qz-options');
@@ -1031,12 +1074,12 @@ function resetWrite() {
   document.getElementById('wr-start').classList.remove('hidden');
   document.getElementById('wr-play').classList.add('hidden');
   document.getElementById('wr-done').classList.add('hidden');
-  renderUnitChips('wr-unit-row', 'wr-unit-info', wrSelectedUnit, 'selectWrUnit');
+  renderUnitChips('wr-unit-row', 'wr-unit-info', wrSelectedUnits, 'toggleWrUnit');
 }
 
 function startWrite() {
   wrS.index = 0; wrS.score = 0;
-  const unitPool = getUnitPool(wrSelectedUnit);
+  const unitPool = getUnitPool(wrSelectedUnits);
   wrS.total = Math.min(10, unitPool.length);
   const pool = unitPool.filter(w => wordStates[w.w] !== 'known');
   const finalPool = pool.length >= wrS.total ? pool : [...unitPool];
@@ -1123,11 +1166,11 @@ function resetMatch() {
   document.getElementById('mt-start').classList.remove('hidden');
   document.getElementById('mt-play').classList.add('hidden');
   document.getElementById('mt-done').classList.add('hidden');
-  renderUnitChips('mt-unit-row', 'mt-unit-info', mtSelectedUnit, 'selectMtUnit');
+  renderUnitChips('mt-unit-row', 'mt-unit-info', mtSelectedUnits, 'toggleMtUnit');
 }
 
 function startMatch() {
-  const unitPool = getUnitPool(mtSelectedUnit);
+  const unitPool = getUnitPool(mtSelectedUnits);
   const pool = [...unitPool].sort(() => Math.random() - 0.5).slice(0, 6);
   mtS.pairs = [];
   pool.forEach(w => {
@@ -1229,39 +1272,59 @@ window.resetMatch = resetMatch;
 window.startMatch = startMatch;
 
 // ==================== Wrong Words ====================
-function onWwUnitChange() {
-  wwSelectedUnit = parseInt(document.getElementById('ww-unit-select').value) || 0;
-  const tag = document.getElementById('ww-unit-tag');
-  if (wwSelectedUnit > 0) { tag.style.display = ''; tag.textContent = 'UNIT ' + wwSelectedUnit; }
-  else { tag.style.display = 'none'; }
-  renderWrongWords();
-}
-window.onWwUnitChange = onWwUnitChange;
-
-function populateWwUnitSelect() {
-  const sel = document.getElementById('ww-unit-select');
-  if (!sel) return;
+function renderWwUnitChips() {
+  const row = document.getElementById('ww-unit-row');
+  if (!row) return;
   const wrongWordObjs = [...wrongWords].map(w => WORDS.find(x => x.w === w)).filter(Boolean);
   const units = [...new Set(wrongWordObjs.map(w => w.unit || 1))].sort((a, b) => a - b);
-  let html = '<option value="0">全部 UNIT</option>';
-  units.forEach(u => {
+  const allUnits = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
+  const allSelected = wwSelectedUnits.length === 0;
+  let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.toggleWwUnit(0)">全部</span>';
+  allUnits.forEach(u => {
     const cnt = wrongWordObjs.filter(w => (w.unit || 1) === u).length;
-    html += '<option value="' + u + '"' + (wwSelectedUnit === u ? ' selected' : '') + '>UNIT ' + u + ' (' + cnt + ' 错词)</option>';
+    const isOn = wwSelectedUnits.includes(u);
+    html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + (cnt === 0 ? ' empty' : '') + '" onclick="window.toggleWwUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + cnt + ')</span></span>';
   });
-  sel.innerHTML = html;
+  row.innerHTML = html;
+  const info = document.getElementById('ww-unit-info');
+  if (info) {
+    const filtered = getWwFilteredList();
+    if (allSelected) {
+      info.textContent = '已选择：全部 UNIT（共 ' + filtered.length + ' 错词）';
+    } else {
+      const sorted = [...wwSelectedUnits].sort((a, b) => a - b);
+      info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + filtered.length + ' 错词）';
+    }
+  }
 }
 
-function renderWrongWords() {
-  populateWwUnitSelect();
+function getWwFilteredList() {
   const search = (document.getElementById('ww-search')?.value || '').toLowerCase();
   let list = [...wrongWords].map(w => WORDS.find(x => x.w === w)).filter(Boolean);
-  if (wwSelectedUnit > 0) list = list.filter(w => (w.unit || 1) === wwSelectedUnit);
-  const filtered = search ? list.filter(w => w.w.toLowerCase().includes(search) || w.m.includes(search)) : list;
+  if (wwSelectedUnits.length > 0) list = list.filter(w => wwSelectedUnits.includes(w.unit || 1));
+  if (search) list = list.filter(w => w.w.toLowerCase().includes(search) || w.m.includes(search));
+  return list;
+}
+
+function toggleWwUnit(u) {
+  if (u === 0) { wwSelectedUnits = []; }
+  else {
+    const idx = wwSelectedUnits.indexOf(u);
+    if (idx >= 0) wwSelectedUnits.splice(idx, 1);
+    else wwSelectedUnits.push(u);
+  }
+  renderWrongWords();
+}
+window.toggleWwUnit = toggleWwUnit;
+
+function renderWrongWords() {
+  renderWwUnitChips();
+  const filtered = getWwFilteredList();
   document.getElementById('ww-count').textContent = filtered.length;
   const c = document.getElementById('ww-list');
   if (filtered.length === 0) {
     c.innerHTML = '<div class="ww-empty"><div class="emoji">🎉</div><p>' +
-      (wwSelectedUnit > 0 ? '该 UNIT 错词本为空！继续保持！' : '错词本为空！继续保持！') + '</p></div>';
+      (wwSelectedUnits.length > 0 ? '所选 UNIT 错词本为空！继续保持！' : '错词本为空！继续保持！') + '</p></div>';
     return;
   }
   c.innerHTML = '';
@@ -1308,18 +1371,44 @@ window.removeWrong = removeWrong;
 
 // ==================== Word List ====================
 function resetWordList() {
-  const sel = document.getElementById('wl-unit-select');
-  if (sel) {
-    const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
-    let html = '<option value="0">全部 UNIT</option>';
-    units.forEach(u => {
-      const count = WORDS.filter(w => w.unit === u).length;
-      html += '<option value="' + u + '">UNIT ' + u + ' (' + count + '词)</option>';
-    });
-    sel.innerHTML = html;
+  renderWlUnitChips();
+  renderWordList();
+}
+
+function renderWlUnitChips() {
+  const row = document.getElementById('wl-unit-row');
+  if (!row) return;
+  const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
+  const allSelected = wlSelectedUnits.length === 0;
+  let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.toggleWlUnit(0)">全部</span>';
+  units.forEach(u => {
+    const count = WORDS.filter(w => w.unit === u).length;
+    const isOn = wlSelectedUnits.includes(u);
+    html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.toggleWlUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
+  });
+  row.innerHTML = html;
+  const info = document.getElementById('wl-unit-info');
+  if (info) {
+    if (allSelected) {
+      info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
+    } else {
+      const sorted = [...wlSelectedUnits].sort((a, b) => a - b);
+      const totalWords = WORDS.filter(w => wlSelectedUnits.includes(w.unit || 1)).length;
+      info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词）';
+    }
+  }
+}
+
+function toggleWlUnit(u) {
+  if (u === 0) { wlSelectedUnits = []; }
+  else {
+    const idx = wlSelectedUnits.indexOf(u);
+    if (idx >= 0) wlSelectedUnits.splice(idx, 1);
+    else wlSelectedUnits.push(u);
   }
   renderWordList();
 }
+window.toggleWlUnit = toggleWlUnit;
 
 function setWlFilter(f, el) {
   wlFilter = f;
@@ -1330,10 +1419,10 @@ function setWlFilter(f, el) {
 window.setWlFilter = setWlFilter;
 
 function renderWordList() {
+  renderWlUnitChips();
   const search = (document.getElementById('wl-search')?.value || '').toLowerCase();
-  const wlUnit = parseInt(document.getElementById('wl-unit-select')?.value || '0');
   let list = WORDS.filter(w => {
-    if (wlUnit > 0 && w.unit !== wlUnit) return false;
+    if (wlSelectedUnits.length > 0 && !wlSelectedUnits.includes(w.unit || 1)) return false;
     if (search && !w.w.toLowerCase().includes(search) && !w.m.includes(search) && !w.pos.includes(search)) return false;
     const s = wordStates[w.w];
     if (wlFilter === 'known') return s === 'known';
