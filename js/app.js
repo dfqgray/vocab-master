@@ -856,7 +856,7 @@ function showFlashcard() {
   document.getElementById('fc-unit-badge').textContent = w.unit ? 'UNIT ' + w.unit : '';
   const star = document.getElementById('fc-star');
   star.classList.toggle('on', starredWords.has(w.w));
-  setTimeout(() => speak(w.w), 300);
+  setTimeout(() => playNativeAudio(w.w), 300);
 }
 
 function flipCard() {

@@ -153,6 +153,8 @@ a{text-decoration:none}
 .fc-write-pad-label{font-size:14px;font-weight:800;color:var(--t2);text-align:center}
 .fc-write-input{flex:1;width:100%;background:#fff;border-radius:16px;border:3px dashed var(--bd);font-size:28px;font-weight:800;text-align:center;padding:12px;color:var(--text)}
 .fc-write-input:focus{border-color:var(--blue);border-style:solid;outline:none;background:#fafeff}
+.fc-write-input.ok{border-color:var(--green);background:var(--green-l);border-style:solid}
+.fc-write-input.no{border-color:var(--red);background:var(--red-l);border-style:solid}
 .fc-write-input::placeholder{color:var(--t3);font-size:16px;font-weight:600}
 .fc-write-pad-btns{display:flex;gap:6px;justify-content:center}
 .fc-write-result{text-align:center;font-size:14px;font-weight:800;padding:8px 12px;border-radius:10px;margin-top:4px}
