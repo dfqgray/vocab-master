@@ -6,6 +6,7 @@ import {
 
 // ==================== State ====================
 let WORDS = [];
+let unitMap = {};
 let wordStates = {};
 let wrongWords = new Set();
 let starredWords = new Set();
@@ -31,6 +32,15 @@ let wlFilter = 'all';
 let authMode = 'login';
 let landMode = 'login'; // landing page mode
 
+// Debounce utility
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
 // Expose state for supabase module (avoids circular dependency)
 window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS });
 window.__saveLocal = saveLocal;
@@ -53,6 +63,7 @@ window.__loadCloudState = (data) => {
     const extraWords = data.custom_words.filter(w => !defaultSet.has(w.w));
     if (extraWords.length > 0) {
       WORDS = [...DEFAULT_WORDS, ...extraWords];
+      rebuildUnitCache();
     }
   }
   saveLocal();
@@ -115,6 +126,7 @@ function loadLocal() {
   } catch (e) {
     WORDS = JSON.parse(JSON.stringify(DEFAULT_WORDS));
   }
+  rebuildUnitCache();
 }
 
 // ==================== Sound Effects ====================
@@ -640,19 +652,32 @@ function updateHome() {
 }
 
 // ==================== UNIT Helpers ====================
+function rebuildUnitCache() {
+  unitMap = {};
+  WORDS.forEach(w => {
+    const u = w.unit || 1;
+    if (!unitMap[u]) unitMap[u] = [];
+    unitMap[u].push(w);
+  });
+}
+
 function getUnitPool(selectedUnits) {
   if (!selectedUnits || selectedUnits.length === 0) return [...WORDS];
-  return WORDS.filter(w => selectedUnits.includes(w.unit || 1));
+  let result = [];
+  selectedUnits.forEach(u => {
+    if (unitMap[u]) result = result.concat(unitMap[u]);
+  });
+  return result;
 }
 
 function renderUnitChips(rowId, infoId, selectedUnits, toggleFnName) {
   const row = document.getElementById(rowId);
   if (!row) return;
-  const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
+  const units = Object.keys(unitMap).map(Number).sort((a, b) => a - b);
   const allSelected = selectedUnits.length === 0;
   let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.' + toggleFnName + '(0)">全部</span>';
   units.forEach(u => {
-    const count = WORDS.filter(w => w.unit === u).length;
+    const count = (unitMap[u] || []).length;
     const isOn = selectedUnits.includes(u);
     html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.' + toggleFnName + '(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
   });
@@ -663,7 +688,7 @@ function renderUnitChips(rowId, infoId, selectedUnits, toggleFnName) {
       info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
     } else {
       const sorted = [...selectedUnits].sort((a, b) => a - b);
-      const totalWords = WORDS.filter(w => selectedUnits.includes(w.unit || 1)).length;
+      const totalWords = selectedUnits.reduce((sum, u) => sum + (unitMap[u] || []).length, 0);
       info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词）';
     }
   }
@@ -717,11 +742,11 @@ function resetFlashcard() {
 function renderFcUnitSelector() {
   const row = document.getElementById('fc-unit-row');
   if (!row) return;
-  const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
+  const units = Object.keys(unitMap).map(Number).sort((a, b) => a - b);
   const allSelected = fcSelectedUnits.length === 0;
   let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.toggleFcUnit(0)">全部</span>';
   units.forEach(u => {
-    const count = WORDS.filter(w => w.unit === u).length;
+    const count = (unitMap[u] || []).length;
     const isOn = fcSelectedUnits.includes(u);
     html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.toggleFcUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
   });
@@ -732,8 +757,11 @@ function renderFcUnitSelector() {
       info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
     } else {
       const sorted = [...fcSelectedUnits].sort((a, b) => a - b);
-      const totalWords = WORDS.filter(w => fcSelectedUnits.includes(w.unit || 1)).length;
-      const knownWords = WORDS.filter(w => fcSelectedUnits.includes(w.unit || 1) && wordStates[w.w] === 'known').length;
+      const totalWords = fcSelectedUnits.reduce((sum, u) => sum + (unitMap[u] || []).length, 0);
+      let knownWords = 0;
+      fcSelectedUnits.forEach(u => {
+        if (unitMap[u]) knownWords += unitMap[u].filter(w => wordStates[w.w] === 'known').length;
+      });
       info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词，已掌握 ' + knownWords + ' 词）';
     }
   }
@@ -926,6 +954,13 @@ function clearWriteInput() {
   if (res) res.classList.add('hidden');
 }
 window.clearWriteInput = clearWriteInput;
+
+function toggleWritePad() {
+  const pad = document.querySelector('.fc-write-pad');
+  if (!pad) return;
+  pad.classList.toggle('visible');
+}
+window.toggleWritePad = toggleWritePad;
 
 function checkWriteWord() {
   const inp = document.getElementById('fc-write-input');
@@ -1266,11 +1301,21 @@ function startMatch() {
   mtS.firstSel = null;
   mtS.locked = false;
   mtS.startTime = Date.now();
-  if (mtS.timerInt) clearInterval(mtS.timerInt);
-  mtS.timerInt = setInterval(() => {
+  if (mtS.timerInt) {
+    if (typeof mtS.timerInt === 'number') cancelAnimationFrame(mtS.timerInt);
+    else clearInterval(mtS.timerInt);
+  }
+  let mtLastSec = -1;
+  (function rAFTimer() {
     const sec = Math.floor((Date.now() - mtS.startTime) / 1000);
-    document.getElementById('mt-timer').textContent = '⏱ ' + sec + 's';
-  }, 200);
+    if (sec !== mtLastSec) {
+      mtLastSec = sec;
+      document.getElementById('mt-timer').textContent = '⏱ ' + sec + 's';
+    }
+    if (mtS.matched < mtS.total) {
+      mtS.timerInt = requestAnimationFrame(rAFTimer);
+    }
+  })();
   document.getElementById('mt-start').classList.add('hidden');
   document.getElementById('mt-done').classList.add('hidden');
   document.getElementById('mt-play').classList.remove('hidden');
@@ -1331,7 +1376,11 @@ function selectMatchCard(idx, el) {
 }
 
 function finishMatch() {
-  clearInterval(mtS.timerInt);
+  if (mtS.timerInt) {
+    if (typeof mtS.timerInt === 'number') cancelAnimationFrame(mtS.timerInt);
+    else clearInterval(mtS.timerInt);
+    mtS.timerInt = null;
+  }
   const sec = Math.floor((Date.now() - mtS.startTime) / 1000);
   let xp = 15;
   if (sec < 30) { xp = 30; game.achievements.match30 = true; save(); }
@@ -1431,6 +1480,8 @@ function renderWrongWords() {
   });
 }
 window.renderWrongWords = renderWrongWords;
+const debouncedRenderWrongWords = debounce(renderWrongWords, 250);
+window.debouncedRenderWrongWords = debouncedRenderWrongWords;
 
 function masterWord(word) {
   wordStates[word] = 'known';
@@ -1461,11 +1512,11 @@ function resetWordList() {
 function renderWlUnitChips() {
   const row = document.getElementById('wl-unit-row');
   if (!row) return;
-  const units = [...new Set(WORDS.map(w => w.unit || 1))].sort((a, b) => a - b);
+  const units = Object.keys(unitMap).map(Number).sort((a, b) => a - b);
   const allSelected = wlSelectedUnits.length === 0;
   let html = '<span class="fc-unit-chip all' + (allSelected ? ' on' : '') + '" onclick="window.toggleWlUnit(0)">全部</span>';
   units.forEach(u => {
-    const count = WORDS.filter(w => w.unit === u).length;
+    const count = (unitMap[u] || []).length;
     const isOn = wlSelectedUnits.includes(u);
     html += '<span class="fc-unit-chip' + (isOn ? ' on' : '') + '" onclick="window.toggleWlUnit(' + u + ')">U' + u + '<span style="opacity:.5;font-size:10px">(' + count + ')</span></span>';
   });
@@ -1476,7 +1527,7 @@ function renderWlUnitChips() {
       info.textContent = '已选择：全部 UNIT（共 ' + WORDS.length + ' 词）';
     } else {
       const sorted = [...wlSelectedUnits].sort((a, b) => a - b);
-      const totalWords = WORDS.filter(w => wlSelectedUnits.includes(w.unit || 1)).length;
+      const totalWords = wlSelectedUnits.reduce((sum, u) => sum + (unitMap[u] || []).length, 0);
       info.textContent = '已选择：UNIT ' + sorted.join(', ') + '（共 ' + totalWords + ' 词）';
     }
   }
@@ -1520,15 +1571,12 @@ function renderWordList() {
     c.innerHTML = '<div style="padding:40px;text-align:center;color:var(--t3)">没有匹配的单词</div>';
     return;
   }
-  c.innerHTML = '';
-  list.forEach(w => {
+  c.innerHTML = list.map(w => {
     const s = wordStates[w.w];
     const icon = s === 'known' ? '✅' : s === 'learning' ? '🔄' : '⚪';
     const isWrong = wrongWords.has(w.w);
     const isStar = starredWords.has(w.w);
-    const row = document.createElement('div');
-    row.className = 'wl-row';
-    row.innerHTML =
+    return '<div class="wl-row">' +
       '<div><div class="wl-en">' + w.w + (isWrong ? ' 📝' : '') +
       ' <span class="wl-unit-tag">U' + (w.unit || 1) + '</span></div>' +
       '<div class="wl-phon">' + w.p + '</div>' +
@@ -1542,11 +1590,13 @@ function renderWordList() {
       '<span class="wl-star ' + (isStar ? 'on' : '') + '" onclick="event.stopPropagation();window.toggleStarWord(\'' + w.w.replace(/'/g, "\\'") + '\')">⭐</span>' +
       '<button class="wl-tts" onclick="event.stopPropagation();window.speak(\'' + w.w.replace(/'/g, "\\'") + '\')">🔊</button>' +
       '<button class="wl-tts" onclick="event.stopPropagation();window.playNativeAudio(\'' + w.w.replace(/'/g, "\\'") + '\')" title="原声">🎙️</button>' +
-      '<div class="wl-status" onclick="event.stopPropagation();window.cycleState(\'' + w.w.replace(/'/g, "\\'") + '\')" title="点击切换">' + icon + '</div>';
-    c.appendChild(row);
-  });
+      '<div class="wl-status" onclick="event.stopPropagation();window.cycleState(\'' + w.w.replace(/'/g, "\\'") + '\')" title="点击切换">' + icon + '</div>' +
+      '</div>';
+  }).join('');
 }
 window.renderWordList = renderWordList;
+const debouncedRenderWordList = debounce(renderWordList, 250);
+window.debouncedRenderWordList = debouncedRenderWordList;
 
 function toggleStarWord(word) {
   if (starredWords.has(word)) { starredWords.delete(word); showToast('已取消星标'); }
@@ -1610,10 +1660,11 @@ function doImport() {
     if (word.w && /^[a-zA-Z]/.test(word.w)) newWords.push(word);
   });
   if (newWords.length === 0) { showToast('未识别到有效单词'); return; }
-  if (replace) { WORDS = newWords; wordStates = {}; wrongWords = new Set(); starredWords = new Set(); }
+  if (replace) { WORDS = newWords; wordStates = {}; wrongWords = new Set(); starredWords = new Set(); rebuildUnitCache(); }
   else {
     const existing = new Set(WORDS.map(w => w.w));
     newWords.forEach(w => { if (!existing.has(w.w)) WORDS.push(w); });
+    rebuildUnitCache();
   }
   save();
   closeImportModal();
@@ -1800,9 +1851,9 @@ function showSyncBadge(msg, isError) {
 function renderAll() {
   try {
     updateHome();
-    renderWordList();
-    renderWrongWords();
-    renderAchievements();
+    if (!document.getElementById('page-words').classList.contains('hidden')) renderWordList();
+    if (!document.getElementById('page-wrong').classList.contains('hidden')) renderWrongWords();
+    if (!document.getElementById('page-achievements').classList.contains('hidden')) renderAchievements();
   } catch (e) { console.log('[renderAll]', e.message); }
 }
 

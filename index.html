@@ -242,6 +242,7 @@
         <button class="btn btn-gray" onclick="skipCard()">⏭ 跳过</button>
         <button class="btn btn-green" onclick="markFlashcard(true)">✅ 认识</button>
         <button class="btn btn-purple" id="fc-speak-btn" onclick="toggleListening()">🎤 朗读</button>
+        <button class="btn btn-gray" id="fc-write-toggle" onclick="window.toggleWritePad()" title="写字板">✏️</button>
       </div>
       <div class="fc-speak-feedback hidden" id="fc-speak-feedback">
         <span class="fc-speak-fb-icon" id="fc-speak-fb-icon"></span>
@@ -447,7 +448,7 @@
       </div>
       <div class="ww-search">
         <span class="si">🔍</span>
-        <input type="text" id="ww-search" placeholder="搜索错词..." oninput="renderWrongWords()">
+        <input type="text" id="ww-search" placeholder="搜索错词..." oninput="debouncedRenderWrongWords()">
       </div>
     </div>
     <div class="ww-unit-bar">
@@ -468,7 +469,7 @@
     <div class="wl-header">
       <div class="wl-search">
         <span class="si">🔍</span>
-        <input type="text" id="wl-search" placeholder="搜索单词..." oninput="renderWordList()">
+        <input type="text" id="wl-search" placeholder="搜索单词..." oninput="debouncedRenderWordList()">
       </div>
     </div>
     <div class="fc-unit-selector">
