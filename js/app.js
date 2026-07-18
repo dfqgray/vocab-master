@@ -99,8 +99,6 @@ window.__getExtraWords = () => {
 // ==================== Spaced Repetition ====================
 const REVIEW_INTERVALS = [0, 1, 3, 7, 14, 30, 60]; // level 0-6: days until next review
 
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-
 function updateReview(word, correct) {
   if (correct) {
     // On correct: advance level, schedule next review
