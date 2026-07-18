@@ -680,7 +680,7 @@ export const DEFAULT_WORDS = [
 {w:"exchange",p:"/ɪksˈtʃeɪndʒ/",m:"v/；交换；交流；交易",pos:"n.",e:"exchange is a common word.",unit:11,root:"ex（加强）+change （更换）→交换",mn:"词根记忆：ex（加强）+change （更换）→交换",coll:"exchange rate 汇率 exchange a few words 说几句话 in exchange 作 为交换",deriv:"",ant:"",syn:"",plur:""},
 {w:"excite",p:"/ɪkˈsaɪt/",m:"使激动；刺激；激发",pos:"v.",e:"excite is a common word.",unit:11,root:"",mn:"",coll:"excite interest 激发兴趣",deriv:"excitement （n兴奋） exciting（adj 令人兴奋的） excited（adj 兴 奋的）",ant:"",syn:"arouse （v 激起；激发）",plur:""},
 {w:"exclusive",p:"/ɪkˈskluːsɪv/",m:"专有的；独有的；排斥的；独家新闻",pos:"adj. & n.",e:"exclusive is a common word.",unit:11,root:"来自exclude （v 排斥；把……排除在外）",mn:"来自exclude （v 排斥；把……排除在外）",coll:"exclusive of… 除……外；不包括……",deriv:"",ant:"",syn:"",plur:""},
-{w:"excuse n",p:"/ɪkˈskjuːs/",m:"",pos:"",e:"excuse n is a common word.",unit:11,root:"",mn:"",coll:"",deriv:"",ant:"",syn:"",plur:""},
+{w:"excuse",p:"/ɪkˈskjuːs/",m:"借口；原谅",pos:"n./v.",e:"Excuse me, could I ask you some questions? 对不起，我可以问你一些问题吗？",unit:11,root:"",mn:"ex出+cuse理由→找理由开脱→原谅",coll:"excuse me 打扰一下；make an excuse 找借口",deriv:"",ant:"",syn:"forgive 原谅",plur:""},
 {w:"exhausted",p:"/ɪɡˈzɔːstɪd/",m:"疲惫的；耗尽的；枯竭的",pos:"adj.",e:"exhausted is a common word.",unit:11,root:"",mn:"",coll:"an exhausted coal mine 一座枯竭的煤矿",deriv:"",ant:"",syn:"",plur:""},
 {w:"exhibition",p:"/ˌeksɪˈbɪʃn/",m:"展览",pos:"n.",e:"The teacher took the students to visit the exhibition. 老师带着学生 参观了展览。",unit:11,root:"来自exhibit （v 陈列；展览）",mn:"来自exhibit （v 陈列；展览）",coll:"",deriv:"",ant:"",syn:"",plur:""},
 {w:"exist",p:"/ɪɡˈzɪst/",m:"存在；维持生存",pos:"v.",e:"Fish cannot exist without water. 没有水，鱼就不能生存。",unit:11,root:"",mn:"",coll:"",deriv:"existence （n 存在，生存）",ant:"",syn:"",plur:""},

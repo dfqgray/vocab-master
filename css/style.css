@@ -486,12 +486,12 @@ a{text-decoration:none}
   box-shadow: var(--sb) var(--green-d);
   border: none;
   cursor: pointer;
-  transition: all .1s;
+  transition: transform .1s, box-shadow .1s, background .1s;
   font-family: inherit;
   margin-top: 4px;
 }
 .landing-submit:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--green-d); }
-.landing-submit:disabled { opacity: .6; pointer-events: none; }
+.landing-submit:disabled { background: #a0d87a; box-shadow: 0 4px 0 #7abf4a; color: rgba(255,255,255,.8); pointer-events: none; }
 .landing-switch {
   margin-top: 24px;
   font-size: 13px;
