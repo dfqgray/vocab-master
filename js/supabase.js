@@ -188,7 +188,7 @@ async function cloudSyncNow() {
   isSyncing = true;
   try {
     const ok = await cloudUploadProgress();
-    if (ok && window.__showSyncBadge) window.__showSyncBadge('☁️ 同步完成', false);
+    // Silent sync during gameplay — don't show badge on success
   } finally {
     isSyncing = false;
     if (pendingSync) { pendingSync = false; cloudSyncNow(); }

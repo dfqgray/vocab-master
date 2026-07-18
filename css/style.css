@@ -128,7 +128,7 @@ a{text-decoration:none}
 
 /* ============ Flashcard ============ */
 .fc-card-wrap{perspective:1200px;margin-bottom:20px}
-.fc-card{position:relative;width:100%;height:520px;cursor:pointer;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.fc-card{position:relative;width:100%;height:520px;cursor:pointer;transform-style:preserve-3d;transition:transform .3s ease}
 .fc-card.flipped{transform:rotateY(180deg)}
 .fc-card.swipe-left{transform:translateX(-120%) rotate(-15deg);opacity:0}
 .fc-card.swipe-right{transform:translateX(120%) rotate(15deg);opacity:0}

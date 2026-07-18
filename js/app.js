@@ -1007,6 +1007,7 @@ function markFlashcard(known) {
   save();
   fcS.index++;
   setTimeout(showFlashcard, 300);
+  // Card transition matches this timing: .fc-card { transition: transform .3s }
 }
 
 function skipCard() { fcS.index++; showFlashcard(); }
@@ -1014,7 +1015,15 @@ function skipCard() { fcS.index++; showFlashcard(); }
 // ==================== Write Pad (native input, iPad Scribble friendly) ====================
 function clearWriteInput() {
   const inp = document.getElementById('fc-write-input');
-  if (inp) { inp.value = ''; inp.focus(); }
+  if (inp) {
+    inp.value = '';
+    // Only focus if write pad is visible (avoids mobile keyboard jank)
+    const pad = document.querySelector('.fc-write-pad');
+    if (pad) {
+      const style = window.getComputedStyle(pad);
+      if (style.display !== 'none') inp.focus();
+    }
+  }
   const res = document.getElementById('fc-write-result');
   if (res) res.classList.add('hidden');
 }
