@@ -97,7 +97,7 @@ window.__getExtraWords = () => {
 };
 
 // ==================== Spaced Repetition ====================
-const REVIEW_INTERVALS = [0, 1, 3, 7, 14, 30, 60]; // level 0-6: days until next review
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60, 90]; // level 0-6: days until next review
 
 function updateReview(word, correct) {
   if (correct) {
@@ -110,9 +110,10 @@ function updateReview(word, correct) {
     reviewSchedule[word] = { level: newLevel, nextReview: nextDate, history: [...(cur.history || []), { date: todayStr(), result: 'correct' }] };
     // Level 6 = graduated, keep but no longer show in review queue
   } else {
-    // On wrong: enter system or reset to level 0
+    // On wrong: schedule for tomorrow, not today
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     const cur = reviewSchedule[word];
-    reviewSchedule[word] = { level: 0, nextReview: todayStr(), history: [...(cur?.history || []), { date: todayStr(), result: 'wrong' }] };
+    reviewSchedule[word] = { level: 0, nextReview: tomorrow, history: [...(cur?.history || []), { date: todayStr(), result: 'wrong' }] };
   }
 }
 
