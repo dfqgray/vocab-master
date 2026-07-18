@@ -73,6 +73,11 @@
 
   <!-- ==================== Home Page ==================== -->
   <div class="page" id="page-home">
+    <div class="tb-selector" id="tb-selector" onclick="window.openTextbookPicker()">
+      <span class="tb-icon" id="tb-icon">📗</span>
+      <span class="tb-name" id="tb-name">PET 核心词汇</span>
+      <span class="tb-arrow">▾</span>
+    </div>
     <div class="hero">
       <div class="hero-emoji">📖</div>
       <h1>今天学点什么？</h1>
@@ -520,6 +525,17 @@
       <div class="modal-actions">
         <button class="btn btn-gray" onclick="closeImportModal()">取消</button>
         <button class="btn btn-green" onclick="doImport()">✅ 导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== Textbook Picker Modal ==================== -->
+  <div class="overlay hidden" id="tb-picker">
+    <div class="tb-picker-card">
+      <h2>📚 选择教材</h2>
+      <div class="tb-picker-list" id="tb-picker-list"></div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-gray" onclick="window.closeTextbookPicker()">关闭</button>
       </div>
     </div>
   </div>

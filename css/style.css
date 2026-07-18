@@ -525,3 +525,63 @@ a{text-decoration:none}
   .landing-title { font-size: 24px; }
   .landing-emoji { font-size: 44px; }
 }
+
+/* ============ Textbook Selector ============ */
+.tb-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #fff;
+  border-radius: var(--rs);
+  box-shadow: var(--sc);
+  cursor: pointer;
+  margin-bottom: 12px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tb-selector:hover { background: var(--bg2); }
+.tb-selector .tb-icon { font-size: 20px; }
+.tb-selector .tb-name { font-size: 14px; font-weight: 800; color: var(--text); }
+.tb-selector .tb-arrow { font-size: 12px; color: var(--t3); margin-left: 2px; }
+
+/* Textbook Picker Panel */
+.tb-picker-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 28px 24px 20px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 40px rgba(0,0,0,.15);
+}
+.tb-picker-card h2 { font-size: 20px; text-align: center; margin-bottom: 16px; }
+.tb-picker-list { display: flex; flex-direction: column; gap: 10px; }
+
+.tb-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--rs);
+  border: 2px solid var(--bd);
+  cursor: pointer;
+  transition: background .1s;
+}
+.tb-picker-item:hover { background: var(--bg2); }
+.tb-picker-item.active { background: var(--green-l); border-color: var(--green); }
+.tb-picker-item .tpi-icon { font-size: 28px; flex-shrink: 0; }
+.tb-picker-item .tpi-info { flex: 1; min-width: 0; }
+.tb-picker-item .tpi-name { font-size: 15px; font-weight: 800; color: var(--text); }
+.tb-picker-item .tpi-meta { font-size: 12px; color: var(--t2); margin-top: 2px; }
+.tb-picker-item .tpi-prog { font-size: 11px; color: var(--t3); margin-top: 2px; }
+.tb-picker-item .tpi-badge {
+  font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px;
+  background: var(--bg3); color: var(--t2); white-space: nowrap;
+}
+.tb-picker-item .tpi-badge.download {
+  background: var(--blue-l); color: var(--blue-d);
+}

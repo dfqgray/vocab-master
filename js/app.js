@@ -1,4 +1,9 @@
-import { DEFAULT_WORDS } from './words.js';
+import {
+  initTextbook, getWords, getActiveTextbookId, getActiveTextbook,
+  loadProgress as loadTextbookProgress, saveProgress as saveTextbookProgress,
+  loadTextbook
+} from './textbook_loader.js';
+import { TEXTBOOKS, getTextbook } from './textbooks.js';
 import {
   initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudChangePassword, cloudCheckSession,
   cloudSyncDebounced, cloudSyncNow, isLoggedIn, getUserEmail, isCloudReady, getCloudError
@@ -42,7 +47,8 @@ function debounce(fn, delay) {
 }
 
 // Expose state for supabase module (avoids circular dependency)
-window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS });
+window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS, textbookId: getActiveTextbookId() });
+window.__getActiveTextbookId = getActiveTextbookId;
 window.__saveLocal = saveLocal;
 window.__showToast = showToast;
 window.__showSyncBadge = showSyncBadge;
@@ -58,11 +64,12 @@ window.__loadCloudState = (data) => {
     );
   }
   if (data.custom_words && data.custom_words.length > 0) {
-    // Only keep words NOT in DEFAULT_WORDS (truly custom imports)
-    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    // Only keep words NOT in textbook's original word list (truly custom imports)
+    const baseWords = getWords();
+    const defaultSet = new Set(baseWords.map(w => w.w));
     const extraWords = data.custom_words.filter(w => !defaultSet.has(w.w));
     if (extraWords.length > 0) {
-      WORDS = [...DEFAULT_WORDS, ...extraWords];
+      WORDS = [...baseWords, ...extraWords];
       rebuildUnitCache();
     }
   }
@@ -70,30 +77,33 @@ window.__loadCloudState = (data) => {
   updateHome();
   renderAll();
 };
-// Only sync custom_words if user actually imported custom words beyond DEFAULT_WORDS
+// Only sync custom_words if user actually imported custom words beyond textbook defaults
 window.__hasCustomWords = () => {
   try {
-    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    const baseWords = getWords();
+    const defaultSet = new Set(baseWords.map(w => w.w));
     return WORDS.some(w => !defaultSet.has(w.w));
   } catch (e) { return false; }
 };
-// Get only extra words beyond DEFAULT_WORDS for cloud sync
+// Get only extra words beyond textbook defaults for cloud sync
 window.__getExtraWords = () => {
   try {
-    const defaultSet = new Set(DEFAULT_WORDS.map(w => w.w));
+    const baseWords = getWords();
+    const defaultSet = new Set(baseWords.map(w => w.w));
     return WORDS.filter(w => !defaultSet.has(w.w));
   } catch (e) { return []; }
 };
 
 // ==================== Storage ====================
-const WORDS_VERSION = 'v7_fullfields_2028';
 
 function saveLocal() {
-  localStorage.setItem('pvm_words', JSON.stringify(WORDS));
-  localStorage.setItem('pvm_states', JSON.stringify(wordStates));
-  localStorage.setItem('pvm_wrong', JSON.stringify([...wrongWords]));
-  localStorage.setItem('pvm_starred', JSON.stringify([...starredWords]));
-  localStorage.setItem('pvm_game', JSON.stringify(game));
+  const tid = getActiveTextbookId();
+  saveTextbookProgress(tid, {
+    wordStates,
+    wrongWords: [...wrongWords],
+    starredWords: [...starredWords],
+    game
+  });
 }
 
 function save() {
@@ -102,30 +112,17 @@ function save() {
 }
 
 function loadLocal() {
-  try {
-    const cachedVersion = localStorage.getItem('pvm_words_ver') || '';
-    const cachedWords = localStorage.getItem('pvm_words');
-    if (cachedVersion !== WORDS_VERSION || !cachedWords) {
-      WORDS = JSON.parse(JSON.stringify(DEFAULT_WORDS));
-      localStorage.setItem('pvm_words', JSON.stringify(WORDS));
-      localStorage.setItem('pvm_words_ver', WORDS_VERSION);
-      wordStates = {};
-      wrongWords = new Set();
-      starredWords = new Set();
-      localStorage.setItem('pvm_states', '{}');
-      localStorage.setItem('pvm_wrong', '[]');
-      localStorage.setItem('pvm_starred', '[]');
-    } else {
-      WORDS = JSON.parse(cachedWords);
-      wordStates = JSON.parse(localStorage.getItem('pvm_states') || '{}');
-      wrongWords = new Set(JSON.parse(localStorage.getItem('pvm_wrong') || '[]'));
-      starredWords = new Set(JSON.parse(localStorage.getItem('pvm_starred') || '[]'));
-    }
-    const g = JSON.parse(localStorage.getItem('pvm_game') || 'null');
-    if (g) game = g;
-  } catch (e) {
-    WORDS = JSON.parse(JSON.stringify(DEFAULT_WORDS));
-  }
+  // WORDS is already loaded by textbook_loader
+  // Load per-textbook progress from localStorage
+  const tid = getActiveTextbookId();
+  const progress = loadTextbookProgress(tid);
+  wordStates = progress.wordStates || {};
+  wrongWords = new Set(progress.wrongWords || []);
+  starredWords = new Set(progress.starredWords || []);
+  game = Object.assign(
+    { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
+    progress.game || {}
+  );
   rebuildUnitCache();
 }
 
@@ -395,7 +392,8 @@ let nativeAudio = null;
 function playNativeAudio(word) {
   if (!word) return;
   const safe = word.replace(/[/ ]/g, '_');
-  const url = AUDIO_BASE + '/' + safe + '.mp3';
+  const tid = getActiveTextbookId();
+  const url = AUDIO_BASE + '/' + tid + '/' + safe + '.mp3';
   if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   const a = new Audio(url);
@@ -603,6 +601,73 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
+
+// ==================== Textbook Picker ====================
+function updateTextbookUI() {
+  const tb = getActiveTextbook();
+  if (!tb) return;
+  document.getElementById('tb-icon').textContent = tb.icon;
+  document.getElementById('tb-name').textContent = tb.name;
+}
+
+function renderTextbookPicker() {
+  const activeId = getActiveTextbookId();
+  const list = document.getElementById('tb-picker-list');
+  list.innerHTML = TEXTBOOKS.map(tb => {
+    const isActive = tb.id === activeId;
+    const progress = loadTextbookProgress(tb.id);
+    const known = Object.values(progress.wordStates || {}).filter(s => s === 'known').length;
+    const pct = tb.wordCount > 0 ? Math.round(known / tb.wordCount * 100) : 0;
+    const badge = tb.bundled
+      ? (known > 0 ? '已掌握 ' + pct + '%' : '未开始')
+      : '<span class="tpi-badge download">📥 需下载</span>';
+
+    return '<div class="tb-picker-item' + (isActive ? ' active' : '') + '" onclick="window.switchTextbook(\'' + tb.id + '\')">' +
+      '<span class="tpi-icon">' + tb.icon + '</span>' +
+      '<div class="tpi-info">' +
+      '<div class="tpi-name">' + tb.name + '</div>' +
+      '<div class="tpi-meta">' + tb.wordCount + '词 · ' + tb.units + '单元 · ' + tb.level + '</div>' +
+      (known > 0 ? '<div class="tpi-prog">' + badge + '</div>' : '') +
+      '</div>' +
+      (tb.bundled ? '<span class="tpi-badge">' + badge + '</span>' : badge) +
+      '</div>';
+  }).join('');
+}
+window.renderTextbookPicker = renderTextbookPicker;
+
+async function switchTextbook(id) {
+  if (id === getActiveTextbookId()) {
+    closeTextbookPicker();
+    return;
+  }
+  // Save current progress
+  saveLocal();
+  // Load new textbook
+  try {
+    await loadTextbook(id);
+    WORDS = [...getWords()];
+    loadLocal();
+    updateTextbookUI();
+    updateHome();
+    renderAll();
+    closeTextbookPicker();
+    showToast('已切换到 ' + getActiveTextbook().name);
+  } catch (e) {
+    showToast('切换失败: ' + (e.message || '未知错误'));
+  }
+}
+window.switchTextbook = switchTextbook;
+
+function openTextbookPicker() {
+  renderTextbookPicker();
+  document.getElementById('tb-picker').classList.remove('hidden');
+}
+window.openTextbookPicker = openTextbookPicker;
+
+function closeTextbookPicker() {
+  document.getElementById('tb-picker').classList.add('hidden');
+}
+window.closeTextbookPicker = closeTextbookPicker;
 
 // ==================== Home ====================
 function updateNav() {
@@ -1678,6 +1743,7 @@ window.doImport = doImport;
 function showApp() {
   document.getElementById('landing-page').classList.add('hidden');
   document.getElementById('app-content').classList.remove('hidden');
+  updateTextbookUI();
   updateAuthUI();
   updateHome();
   renderAll();
@@ -1893,32 +1959,38 @@ window.addEventListener('online', () => {
   }
 });
 
-// Load local data first
-loadLocal();
-
-// Disable landing submit until Supabase is ready
+// Disable landing submit until ready
 document.getElementById('land-submit').disabled = true;
-document.getElementById('land-submit').textContent = '正在连接服务器...';
+document.getElementById('land-submit').textContent = '正在加载...';
 
-// Landing page is visible by default, app hidden
-// Init Supabase async — if already logged in, skip landing page
-initSupabase().then(ok => {
+// Init: load textbook first, then load progress, then try cloud session
+initTextbook().then(tb => {
+  // WORDS is now loaded from textbook module
+  window.__WORDS = getWords(); // expose for cloud sync
+  WORDS = [...getWords()]; // local working copy
+  loadLocal(); // load per-textbook progress
+
   // Enable landing submit button
   const landBtn = document.getElementById('land-submit');
   landBtn.disabled = false;
   landBtn.textContent = landMode === 'login' ? '登录' : '注册';
 
-  if (ok) {
-    cloudCheckSession().then(loggedIn => {
-      if (loggedIn) {
-        showApp();
-        showSyncBadge('已自动登录', false);
-      }
-    }).catch(e => console.log('[Session] check failed:', e));
-  }
+  // Init Supabase async — if already logged in, skip landing page
+  initSupabase().then(ok => {
+    if (ok) {
+      cloudCheckSession().then(loggedIn => {
+        if (loggedIn) {
+          showApp();
+          showSyncBadge('已自动登录', false);
+        }
+      }).catch(e => console.log('[Session] check failed:', e));
+    }
+  }).catch(e => {
+    console.error('[Init] initSupabase failed:', e);
+  });
 }).catch(e => {
-  console.error('[Init] initSupabase failed:', e);
-  // Still enable button so user can retry
+  console.error('[Init] textbook load failed:', e);
+  // Fallback: still enable login button
   const landBtn = document.getElementById('land-submit');
   landBtn.disabled = false;
   landBtn.textContent = landMode === 'login' ? '登录' : '注册';

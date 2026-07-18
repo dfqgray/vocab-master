@@ -103,8 +103,22 @@ async function cloudLoadProgress() {
     const { data, error } = await supabase.from('user_progress').select('*').eq('user_id', currentUser.id).single();
     if (error && error.code !== 'PGRST116') throw error;
     if (data) {
+      // Extract current textbook's progress from textbook_progress JSON
+      const tbProgress = data.textbook_progress || {};
+      const tid = data.active_textbook || (window.__getActiveTextbookId ? window.__getActiveTextbookId() : 'pet2020');
+      const curProgress = tbProgress[tid] || {};
+
+      // Build cloud state from new format, falling back to old flat columns
+      const cloudState = {
+        word_states: curProgress.word_states || data.word_states || null,
+        wrong_words: curProgress.wrong_words || data.wrong_words || null,
+        starred_words: curProgress.starred_words || data.starred_words || null,
+        game_data: curProgress.game_data || data.game_data || null,
+        custom_words: data.custom_words || null,
+        active_textbook: data.active_textbook || null
+      };
       if (window.__loadCloudState) {
-        window.__loadCloudState(data);
+        window.__loadCloudState(cloudState);
         if (window.__showToast) window.__showToast('☁️ 云端数据已同步到本地');
       }
     } else {
@@ -121,18 +135,31 @@ async function cloudLoadProgress() {
 async function cloudUploadProgress() {
   if (!currentUser) return false;
   const state = window.__getAppState();
+  const tid = state.textbookId || 'pet2020';
   try {
-    // Only sync learning progress, not the full word list
-    // (default words are in words.js, custom words are synced separately)
-    const payload = {
-      user_id: currentUser.id,
+    // Read existing textbook_progress from cloud to avoid overwriting other textbooks
+    const { data: existing } = await supabase.from('user_progress')
+      .select('textbook_progress')
+      .eq('user_id', currentUser.id)
+      .single();
+
+    const tbProgress = (existing && existing.textbook_progress) ? existing.textbook_progress : {};
+
+    // Merge current textbook's progress
+    tbProgress[tid] = {
       word_states: state.wordStates,
       wrong_words: [...state.wrongWords],
       starred_words: [...state.starredWords],
-      game_data: state.game,
+      game_data: state.game
+    };
+
+    const payload = {
+      user_id: currentUser.id,
+      active_textbook: tid,
+      textbook_progress: tbProgress,
       updated_at: new Date().toISOString()
     };
-    // Only sync extra words beyond DEFAULT_WORDS
+    // Only sync extra words beyond textbook defaults
     if (window.__hasCustomWords && window.__hasCustomWords()) {
       const extraWords = window.__getExtraWords ? window.__getExtraWords() : [];
       if (extraWords.length > 0) {
