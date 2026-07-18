@@ -1781,6 +1781,20 @@ async function handleLandingSubmit() {
 
   const btn = document.getElementById('land-submit');
   btn.disabled = true;
+  btn.textContent = '连接中...';
+
+  // Wait for init to finish if still loading
+  if (!_initReady && _initPromise) {
+    await _initPromise;
+  }
+
+  if (!isCloudReady()) {
+    errEl.textContent = '服务器连接失败，请检查网络后重试';
+    btn.disabled = false;
+    btn.textContent = landMode === 'login' ? '登录' : '注册';
+    return;
+  }
+
   btn.textContent = '处理中...';
 
   try {
@@ -1959,26 +1973,23 @@ window.addEventListener('online', () => {
   }
 });
 
-// Disable landing submit until ready
-document.getElementById('land-submit').disabled = true;
-document.getElementById('land-submit').textContent = '正在加载...';
+// Init: load textbook and Supabase in background, button stays enabled
+let _initReady = false;
+let _initPromise = null;
 
-// Init: load textbook first, then load progress, then try cloud session
-initTextbook().then(tb => {
-  // WORDS is now loaded from textbook module
-  window.__WORDS = getWords(); // expose for cloud sync
-  WORDS = [...getWords()]; // local working copy
-  loadLocal(); // load per-textbook progress
-
-  // Enable landing submit button
-  const landBtn = document.getElementById('land-submit');
-  landBtn.disabled = false;
-  landBtn.textContent = landMode === 'login' ? '登录' : '注册';
-
-  // Init Supabase async — if already logged in, skip landing page
-  initSupabase().then(ok => {
-    if (ok) {
-      cloudCheckSession().then(loggedIn => {
+function _doInit() {
+  if (_initPromise) return _initPromise;
+  _initPromise = Promise.all([
+    initTextbook(),
+    initSupabase()
+  ]).then(([tb, supabaseOk]) => {
+    // WORDS loaded from textbook module
+    WORDS = [...getWords()];
+    loadLocal();
+    _initReady = true;
+    // If already logged in, skip landing page
+    if (supabaseOk) {
+      return cloudCheckSession().then(loggedIn => {
         if (loggedIn) {
           showApp();
           showSyncBadge('已自动登录', false);
@@ -1986,12 +1997,9 @@ initTextbook().then(tb => {
       }).catch(e => console.log('[Session] check failed:', e));
     }
   }).catch(e => {
-    console.error('[Init] initSupabase failed:', e);
+    console.error('[Init] failed:', e);
+    _initReady = true; // allow login attempt even on partial failure
   });
-}).catch(e => {
-  console.error('[Init] textbook load failed:', e);
-  // Fallback: still enable login button
-  const landBtn = document.getElementById('land-submit');
-  landBtn.disabled = false;
-  landBtn.textContent = landMode === 'login' ? '登录' : '注册';
-});
+  return _initPromise;
+}
+_doInit();
