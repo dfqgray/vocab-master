@@ -15,6 +15,7 @@ let unitMap = {};
 let wordStates = {};
 let wrongWords = new Set();
 let starredWords = new Set();
+let reviewSchedule = {}; // { word: { level, nextReview, history } }
 let game = {
   xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1,
   todayXP: 0, todayDate: null, achievements: {}
@@ -47,7 +48,7 @@ function debounce(fn, delay) {
 }
 
 // Expose state for supabase module (avoids circular dependency)
-window.__getAppState = () => ({ wordStates, wrongWords, starredWords, game, WORDS, textbookId: getActiveTextbookId() });
+window.__getAppState = () => ({ wordStates, wrongWords, starredWords, reviewSchedule, game, WORDS, textbookId: getActiveTextbookId() });
 window.__getActiveTextbookId = getActiveTextbookId;
 window.__saveLocal = saveLocal;
 window.__showToast = showToast;
@@ -57,6 +58,7 @@ window.__loadCloudState = (data) => {
   if (data.word_states) wordStates = data.word_states;
   if (data.wrong_words) wrongWords = new Set(data.wrong_words);
   if (data.starred_words) starredWords = new Set(data.starred_words);
+  if (data.review_schedule) reviewSchedule = data.review_schedule;
   if (data.game_data) {
     game = Object.assign(
       { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
@@ -94,6 +96,39 @@ window.__getExtraWords = () => {
   } catch (e) { return []; }
 };
 
+// ==================== Spaced Repetition ====================
+const REVIEW_INTERVALS = [0, 1, 3, 7, 14, 30, 60]; // level 0-6: days until next review
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function updateReview(word, correct) {
+  if (correct) {
+    // On correct: advance level, schedule next review
+    const cur = reviewSchedule[word];
+    if (!cur) return;
+    const newLevel = Math.min(cur.level + 1, 6);
+    const interval = REVIEW_INTERVALS[newLevel];
+    const nextDate = new Date(Date.now() + interval * 86400000).toISOString().slice(0, 10);
+    reviewSchedule[word] = { level: newLevel, nextReview: nextDate, history: [...(cur.history || []), { date: todayStr(), result: 'correct' }] };
+    // Level 6 = graduated, keep but no longer show in review queue
+  } else {
+    // On wrong: enter system or reset to level 0
+    const cur = reviewSchedule[word];
+    reviewSchedule[word] = { level: 0, nextReview: todayStr(), history: [...(cur?.history || []), { date: todayStr(), result: 'wrong' }] };
+  }
+}
+
+function getReviewDue() {
+  const today = todayStr();
+  const due = [];
+  for (const [word, data] of Object.entries(reviewSchedule)) {
+    if (data.level < 6 && data.nextReview <= today) {
+      due.push(word);
+    }
+  }
+  return due;
+}
+
 // ==================== Storage ====================
 
 function saveLocal() {
@@ -102,6 +137,7 @@ function saveLocal() {
     wordStates,
     wrongWords: [...wrongWords],
     starredWords: [...starredWords],
+    reviewSchedule,
     game
   });
 }
@@ -119,6 +155,7 @@ function loadLocal() {
   wordStates = progress.wordStates || {};
   wrongWords = new Set(progress.wrongWords || []);
   starredWords = new Set(progress.starredWords || []);
+  reviewSchedule = progress.reviewSchedule || {};
   game = Object.assign(
     { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} },
     progress.game || {}
@@ -270,7 +307,7 @@ function checkAchievements() {
 function countState(state) { return WORDS.filter(w => wordStates[w.w] === state).length; }
 
 // ==================== Navigation ====================
-const TAB_MAP = { home: '首页', flashcard: '闪卡', quiz: '测验', match: '配对', write: '拼写', wrong: '错词', words: '词表', achievements: '成就' };
+const TAB_MAP = { home: '首页', flashcard: '闪卡', quiz: '测验', match: '配对', write: '拼写', wrong: '错词', review: '复习', words: '词表', achievements: '成就' };
 
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -286,6 +323,7 @@ function goPage(name) {
   if (name === 'match') resetMatch();
   if (name === 'write') resetWrite();
   if (name === 'wrong') renderWrongWords();
+  if (name === 'review') resetReview();
   if (name === 'words') resetWordList();
   if (name === 'achievements') renderAchievements();
 }
@@ -684,8 +722,11 @@ function updateHome() {
   document.getElementById('s-known').textContent = known;
   document.getElementById('s-learning').textContent = learning;
   document.getElementById('s-wrong').textContent = wrongWords.size;
+  const reviewDue = getReviewDue().length;
+  document.getElementById('s-review').textContent = reviewDue;
   document.getElementById('wl-badge').textContent = total + ' 词';
   document.getElementById('ww-badge').textContent = wrongWords.size + ' 词';
+  document.getElementById('rv-badge').textContent = reviewDue + ' 词';
   document.getElementById('star-fc').style.opacity = starredWords.size > 0 ? '1' : '0.3';
   document.getElementById('star-ww').style.opacity = wrongWords.size > 0 ? '1' : '0.3';
 
@@ -996,11 +1037,13 @@ function markFlashcard(known) {
     fcS.knownCount++;
     addXP(5);
     wrongWords.delete(w.w);
+    updateReview(w.w, true);
     sfxCorrect();
     card.classList.add('swipe-right');
   } else {
     wordStates[w.w] = 'learning';
     wrongWords.add(w.w);
+    updateReview(w.w, false);
     sfxWrong();
     card.classList.add('swipe-left');
   }
@@ -1075,6 +1118,15 @@ function finishFlashcard() {
   document.getElementById('fc-done').classList.remove('hidden');
   document.getElementById('fc-done-count').textContent = fcS.total;
   document.getElementById('fc-done-known').textContent = fcS.knownCount;
+  // Show review hint if there are words due
+  const reviewDue = getReviewDue().length;
+  const hint = document.getElementById('fc-done-review-hint');
+  if (hint && reviewDue > 0) {
+    document.getElementById('fc-done-review-count').textContent = reviewDue;
+    hint.classList.remove('hidden');
+  } else if (hint) {
+    hint.classList.add('hidden');
+  }
   updateHome();
 }
 
@@ -1181,11 +1233,13 @@ function answerChoice(el, selected, correct, word) {
     sfxCorrect();
     wordStates[word.w] = wordStates[word.w] === 'known' ? 'known' : 'learning';
     wrongWords.delete(word.w);
+    updateReview(word.w, true);
   } else {
     el.classList.add('wrong');
     opts.forEach(o => { if (o.querySelector('span').textContent === correct) o.classList.add('correct'); });
     wrongWords.add(word.w);
     wordStates[word.w] = 'learning';
+    updateReview(word.w, false);
     game.hearts = Math.max(0, game.hearts - 1);
     sfxWrong();
   }
@@ -1215,10 +1269,12 @@ function submitDict() {
     sfxCorrect();
     wrongWords.delete(q.word.w);
     wordStates[q.word.w] = wordStates[q.word.w] === 'known' ? 'known' : 'learning';
+    updateReview(q.word.w, true);
   } else {
     input.classList.add('no');
     wrongWords.add(q.word.w);
     wordStates[q.word.w] = 'learning';
+    updateReview(q.word.w, false);
     game.hearts = Math.max(0, game.hearts - 1);
     sfxWrong();
   }
@@ -1311,10 +1367,12 @@ function submitWrite() {
     sfxCorrect();
     wrongWords.delete(w.w);
     wordStates[w.w] = wordStates[w.w] === 'known' ? 'known' : 'learning';
+    updateReview(w.w, true);
   } else {
     input.classList.add('no');
     wrongWords.add(w.w);
     wordStates[w.w] = 'learning';
+    updateReview(w.w, false);
     game.hearts = Math.max(0, game.hearts - 1);
     sfxWrong();
   }
@@ -1477,6 +1535,98 @@ function finishMatch() {
 window.resetMatch = resetMatch;
 window.startMatch = startMatch;
 
+// ==================== Spaced Repetition Review ====================
+let rvS = { index: 0, list: [], upgraded: 0, reset: 0, total: 0 };
+
+function resetReview() {
+  rvS = { index: 0, list: [], upgraded: 0, reset: 0, total: 0 };
+  const due = getReviewDue();
+  const dueWords = due.map(w => WORDS.find(x => x.w === w)).filter(Boolean);
+  if (dueWords.length === 0) {
+    document.getElementById('rv-due-count').textContent = '0';
+    document.getElementById('rv-empty').classList.remove('hidden');
+    document.getElementById('rv-play').classList.add('hidden');
+    document.getElementById('rv-done').classList.add('hidden');
+    return;
+  }
+  document.getElementById('rv-empty').classList.add('hidden');
+  document.getElementById('rv-play').classList.remove('hidden');
+  document.getElementById('rv-done').classList.add('hidden');
+  document.getElementById('rv-due-count').textContent = dueWords.length;
+  dueWords.sort(() => Math.random() - 0.5);
+  rvS.list = dueWords;
+  rvS.index = 0;
+  rvS.total = dueWords.length;
+  rvS.upgraded = 0;
+  rvS.reset = 0;
+  showReviewCard();
+}
+
+function showReviewCard() {
+  if (rvS.index >= rvS.total) return finishReview();
+  if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  const w = rvS.list[rvS.index];
+  const card = document.getElementById('rv-card');
+  card.classList.remove('flipped', 'swipe-left', 'swipe-right');
+  // Reuse flashcard card DOM
+  document.getElementById('rv-word').textContent = w.w;
+  document.getElementById('rv-phon').textContent = w.p;
+  document.getElementById('rv-pos').textContent = w.pos;
+  document.getElementById('rv-meaning').textContent = w.m;
+  document.getElementById('rv-example').textContent = w.e || '';
+  document.getElementById('rv-example-box').classList.toggle('hidden', !w.e);
+  document.getElementById('rv-count').textContent = (rvS.index + 1) + '/' + rvS.total;
+  document.getElementById('rv-fill').style.width = (rvS.index / rvS.total * 100) + '%';
+  // Show review level
+  const rs = reviewSchedule[w.w];
+  const lvl = rs ? rs.level : 0;
+  const lvlLabels = ['新词', '1天', '3天', '7天', '14天', '30天', '毕业'];
+  document.getElementById('rv-level').textContent = 'Level ' + lvl + ' · ' + lvlLabels[Math.min(lvl, 6)];
+  setTimeout(() => speak(w.w), 300);
+}
+
+function markReview(known) {
+  if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  const w = rvS.list[rvS.index];
+  const card = document.getElementById('rv-card');
+  if (known) {
+    const curLevel = (reviewSchedule[w.w]?.level || 0);
+    updateReview(w.w, true);
+    rvS.upgraded++;
+    wordStates[w.w] = wordStates[w.w] === 'known' ? 'known' : 'learning';
+    wrongWords.delete(w.w);
+    sfxCorrect();
+    card.classList.add('swipe-right');
+  } else {
+    updateReview(w.w, false);
+    rvS.reset++;
+    wordStates[w.w] = 'learning';
+    wrongWords.add(w.w);
+    sfxWrong();
+    card.classList.add('swipe-left');
+  }
+  save();
+  rvS.index++;
+  setTimeout(showReviewCard, 300);
+}
+
+function finishReview() {
+  document.getElementById('rv-play').classList.add('hidden');
+  document.getElementById('rv-done').classList.remove('hidden');
+  document.getElementById('rv-done-upgraded').textContent = rvS.upgraded;
+  document.getElementById('rv-done-reset').textContent = rvS.reset;
+  document.getElementById('rv-done-count').textContent = rvS.total;
+  addXP(rvS.upgraded * 3);
+  updateHome();
+}
+window.resetReview = resetReview;
+window.markReview = markReview;
+
+function skipReviewCard() { rvS.index++; showReviewCard(); }
+window.skipReviewCard = skipReviewCard;
+
 // ==================== Wrong Words ====================
 function renderWwUnitChips() {
   const row = document.getElementById('ww-unit-row');
@@ -1560,6 +1710,7 @@ window.debouncedRenderWrongWords = debouncedRenderWrongWords;
 function masterWord(word) {
   wordStates[word] = 'known';
   wrongWords.delete(word);
+  updateReview(word, true);
   save();
   renderWrongWords();
   showToast('🎉 已掌握！');

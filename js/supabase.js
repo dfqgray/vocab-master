@@ -113,6 +113,7 @@ async function cloudLoadProgress() {
         word_states: curProgress.word_states || data.word_states || null,
         wrong_words: curProgress.wrong_words || data.wrong_words || null,
         starred_words: curProgress.starred_words || data.starred_words || null,
+        review_schedule: curProgress.review_schedule || null,
         game_data: curProgress.game_data || data.game_data || null,
         custom_words: data.custom_words || null,
         active_textbook: data.active_textbook || null
@@ -150,6 +151,7 @@ async function cloudUploadProgress() {
       word_states: state.wordStates,
       wrong_words: [...state.wrongWords],
       starred_words: [...state.starredWords],
+      review_schedule: state.reviewSchedule || {},
       game_data: state.game
     };
 

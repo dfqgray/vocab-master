@@ -65,6 +65,7 @@
         <button class="nt" onclick="goPage('match')">🔗 配对</button>
         <button class="nt" onclick="goPage('write')">✍️ 拼写</button>
         <button class="nt" onclick="goPage('wrong')">📋 错词</button>
+        <button class="nt" onclick="goPage('review')">🧠 复习</button>
         <button class="nt" onclick="goPage('words')">📚 词表</button>
         <button class="nt" onclick="goPage('achievements')">🏆 成就</button>
       </div>
@@ -103,6 +104,7 @@
       <div class="stat-card b"><div class="si">✅</div><div class="sn" id="s-known">0</div><div class="sl">已掌握</div></div>
       <div class="stat-card y"><div class="si">🔄</div><div class="sn" id="s-learning">0</div><div class="sl">学习中</div></div>
       <div class="stat-card r"><div class="si">📝</div><div class="sn" id="s-wrong">0</div><div class="sl">错词本</div></div>
+      <div class="stat-card t"><div class="si">🧠</div><div class="sn" id="s-review">0</div><div class="sl">今日复习</div></div>
     </div>
 
     <div class="level-bar-wrap">
@@ -140,6 +142,11 @@
         <div class="md">专攻薄弱环节</div>
         <span class="mc-star" id="star-ww" style="opacity:0.3">⭐</span>
         <div class="mb" id="ww-badge">0 词</div>
+      </div>
+      <div class="mode-card mc-teal" onclick="goPage('review')">
+        <div class="mi">🧠</div><div class="mt">间隔复习</div>
+        <div class="md">科学记忆法，永久不忘</div>
+        <div class="mb" id="rv-badge">0 词</div>
       </div>
       <div class="mode-card mc-yellow" onclick="goPage('words')">
         <div class="mi">📚</div><div class="mt">词汇总表</div>
@@ -265,6 +272,10 @@
         <div class="result-btns">
           <button class="btn btn-green" onclick="resetFlashcard()">🔄 再来一组</button>
           <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+        <div style="text-align:center;margin-top:12px" id="fc-done-review-hint" class="hidden">
+          <span style="font-size:13px;color:var(--t2)">🧠 今日还有 <span id="fc-done-review-count">0</span> 个词等待复习 — </span>
+          <a href="#" onclick="event.preventDefault();goPage('review')" style="color:var(--blue-d);font-weight:800;font-size:13px">去复习 →</a>
         </div>
       </div>
     </div>
@@ -493,6 +504,76 @@
       共 <span id="wl-count">0</span> 个单词
     </div>
     <div class="wl-table" id="wl-table"></div>
+  </div>
+
+  <!-- ==================== Review Page ==================== -->
+  <div class="page hidden" id="page-review">
+    <div class="page-title">🧠 间隔复习</div>
+    <div class="page-sub">科学记忆法 · 在遗忘临界点巩固</div>
+
+    <!-- Empty -->
+    <div id="rv-empty">
+      <div class="result">
+        <div class="big-emoji">🎉</div>
+        <h2>暂无需要复习的单词</h2>
+        <p>去闪卡中学习，不认识的词会自动加入复习计划</p>
+        <div class="result-btns">
+          <button class="btn btn-green" onclick="goPage('flashcard')">📇 去学闪卡</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Play -->
+    <div id="rv-play" class="hidden">
+      <div class="prog-top">
+        <div class="prog-bar"><div class="prog-fill teal" id="rv-fill" style="width:0%"></div></div>
+        <span class="prog-count" id="rv-count">0/0</span>
+        <span style="font-size:14px;font-weight:800;color:var(--t2);white-space:nowrap" id="rv-level">Level 0</span>
+      </div>
+      <div class="fc-main-area">
+        <div class="fc-card-wrap">
+          <div class="fc-card" id="rv-card" onclick="document.getElementById('rv-card').classList.toggle('flipped')">
+          <div class="fc-face fc-front">
+            <div class="fc-word" id="rv-word"></div>
+            <div class="fc-phon" id="rv-phon"></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="fc-tts" onclick="event.stopPropagation();playNativeAudio(document.getElementById('rv-word').textContent)">🎙️</button>
+            </div>
+            <div class="fc-hint">👆 点击翻卡</div>
+          </div>
+          <div class="fc-face fc-back">
+            <div class="fc-back-section">
+              <div class="fc-back-pos" id="rv-pos"></div>
+              <div class="fc-back-meaning" id="rv-meaning"></div>
+            </div>
+            <div class="fc-back-section" id="rv-example-box">
+              <div class="fc-back-label">📖 例句</div>
+              <div class="fc-back-example" id="rv-example"></div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="fc-controls">
+        <button class="btn btn-red" onclick="markReview(false)">❌ 不认识</button>
+        <button class="btn btn-gray" onclick="skipReviewCard()">⏭ 跳过</button>
+        <button class="btn btn-green" onclick="markReview(true)">✅ 认识</button>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div id="rv-done" class="hidden">
+      <div class="result">
+        <div class="big-emoji">🧠</div>
+        <h2>复习完成！</h2>
+        <div class="score-big"><span id="rv-done-upgraded">0</span> 升级</div>
+        <p><span id="rv-done-reset">0</span> 个重置 · 共 <span id="rv-done-count">0</span> 词</p>
+        <div class="result-btns">
+          <button class="btn btn-green" onclick="resetReview()">🔄 再来一组</button>
+          <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ==================== Achievements Page ==================== -->

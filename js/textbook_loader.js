@@ -37,7 +37,7 @@ export function loadProgress(tid) {
     if (raw) return JSON.parse(raw);
   } catch (e) { /* ignore */ }
   // Return empty progress
-  return { wordStates: {}, wrongWords: [], starredWords: [], game: { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} } };
+  return { wordStates: {}, wrongWords: [], starredWords: [], reviewSchedule: {}, game: { xp: 0, streak: 0, lastStudyDate: null, hearts: 5, level: 1, todayXP: 0, todayDate: null, achievements: {} } };
 }
 
 export function saveProgress(tid, data) {
