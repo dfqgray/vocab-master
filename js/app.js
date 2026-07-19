@@ -728,6 +728,8 @@ function updateHome() {
   document.getElementById('wl-badge').textContent = total + ' 词';
   document.getElementById('ww-badge').textContent = wrongWords.size + ' 词';
   document.getElementById('rv-badge').textContent = reviewDue + ' 词';
+  const stubbornCount = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null).length;
+  document.getElementById('ai-badge').textContent = stubbornCount + ' 词';
   document.getElementById('star-fc').style.opacity = starredWords.size > 0 ? '1' : '0.3';
   document.getElementById('star-ww').style.opacity = wrongWords.size > 0 ? '1' : '0.3';
 
