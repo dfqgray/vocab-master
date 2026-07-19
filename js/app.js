@@ -1565,6 +1565,7 @@ function showReviewCard() {
   if (nativeAudio) { nativeAudio.pause(); nativeAudio = null; }
   if (window.speechSynthesis) speechSynthesis.cancel();
   const w = rvS.list[rvS.index];
+  if (!w) { rvS.index++; showReviewCard(); return; }
   const card = document.getElementById('rv-card');
   card.classList.remove('flipped', 'swipe-left', 'swipe-right');
   // Reuse flashcard card DOM
