@@ -1542,7 +1542,6 @@ function resetReview() {
   const due = getReviewDue();
   const dueWords = due.map(w => WORDS.find(x => x.w === w)).filter(Boolean);
   if (dueWords.length === 0) {
-    document.getElementById('rv-due-count').textContent = '0';
     document.getElementById('rv-empty').classList.remove('hidden');
     document.getElementById('rv-play').classList.add('hidden');
     document.getElementById('rv-done').classList.add('hidden');
@@ -1551,7 +1550,7 @@ function resetReview() {
   document.getElementById('rv-empty').classList.add('hidden');
   document.getElementById('rv-play').classList.remove('hidden');
   document.getElementById('rv-done').classList.add('hidden');
-  document.getElementById('rv-due-count').textContent = dueWords.length;
+  document.getElementById('page-review').querySelector('.page-sub').textContent = '今日复习 ' + dueWords.length + ' 词 · 间隔重复记忆';
   dueWords.sort(() => Math.random() - 0.5);
   rvS.list = dueWords;
   rvS.index = 0;
