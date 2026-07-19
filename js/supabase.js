@@ -29,6 +29,7 @@ function initSupabase() {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
       });
+      window.supabaseClient = supabase; // expose for edge function calls
       cloudReady = true;
       cloudInitError = '';
       resolve(true);

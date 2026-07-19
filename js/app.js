@@ -8,6 +8,7 @@ import {
   initSupabase, cloudRegister, cloudLogin, cloudLogout, cloudChangePassword, cloudCheckSession,
   cloudSyncDebounced, cloudSyncNow, isLoggedIn, getUserEmail, isCloudReady, getCloudError
 } from './supabase.js';
+import { getStubbornWords, generateStory, renderStoryHTML, toggleAIWord } from './ai_story.js';
 
 // ==================== State ====================
 let WORDS = [];
@@ -306,7 +307,7 @@ function checkAchievements() {
 function countState(state) { return WORDS.filter(w => wordStates[w.w] === state).length; }
 
 // ==================== Navigation ====================
-const TAB_MAP = { home: '首页', flashcard: '闪卡', quiz: '测验', match: '配对', write: '拼写', wrong: '错词', review: '复习', words: '词表', achievements: '成就' };
+const TAB_MAP = { home: '首页', flashcard: '闪卡', quiz: '测验', match: '配对', write: '拼写', wrong: '错词', review: '复习', aistory: 'AI故事', words: '词表', achievements: '成就' };
 
 function goPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
@@ -323,6 +324,7 @@ function goPage(name) {
   if (name === 'write') resetWrite();
   if (name === 'wrong') renderWrongWords();
   if (name === 'review') resetReview();
+  if (name === 'aistory') resetAIStory();
   if (name === 'words') resetWordList();
   if (name === 'achievements') renderAchievements();
 }
@@ -933,6 +935,14 @@ window.toggleWrongOnly = toggleWrongOnly;
 window.toggleKnownOnly = toggleKnownOnly;
 
 function startFlashcard() {
+  // If wrongOnly mode, check for stubborn words first
+  if (fcS.wrongOnly) {
+    const stubborn = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+    if (stubborn.length > 0) {
+      checkAIStoryPopup();
+      return;
+    }
+  }
   let pool;
   let unitPool = getUnitPool(fcSelectedUnits);
   if (fcS.starredOnly) pool = unitPool.filter(w => starredWords.has(w.w));
@@ -1625,6 +1635,97 @@ window.markReview = markReview;
 
 function skipReviewCard() { rvS.index++; showReviewCard(); }
 window.skipReviewCard = skipReviewCard;
+
+// ==================== AI Story ====================
+let aiStubbornWords = [];
+
+function resetAIStory() {
+  aiStubbornWords = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+  document.getElementById('ai-ready').classList.add('hidden');
+  document.getElementById('ai-empty').classList.add('hidden');
+  document.getElementById('ai-loading').classList.add('hidden');
+  document.getElementById('ai-error').classList.add('hidden');
+  document.getElementById('ai-story-box').classList.add('hidden');
+
+  if (aiStubbornWords.length === 0) {
+    document.getElementById('ai-empty').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('ai-ready').classList.remove('hidden');
+  document.getElementById('ai-word-count').textContent = aiStubbornWords.length;
+  document.getElementById('ai-word-tags').innerHTML = aiStubbornWords.map(w =>
+    '<span class="ai-word-tag">' + w.word + '<span class="awt-meaning">' + w.meaning + '</span></span>'
+  ).join('');
+}
+
+async function generateAIStory() {
+  if (aiStubbornWords.length === 0) return;
+  document.getElementById('ai-ready').classList.add('hidden');
+  document.getElementById('ai-loading').classList.remove('hidden');
+  document.getElementById('ai-error').classList.add('hidden');
+  document.getElementById('ai-gen-btn').disabled = true;
+
+  try {
+    const story = await generateStory(aiStubbornWords);
+    document.getElementById('ai-loading').classList.add('hidden');
+    document.getElementById('ai-story-box').classList.remove('hidden');
+    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, aiStubbornWords);
+  } catch (e) {
+    document.getElementById('ai-loading').classList.add('hidden');
+    document.getElementById('ai-ready').classList.remove('hidden');
+    document.getElementById('ai-error').classList.remove('hidden');
+    document.getElementById('ai-error').textContent = '生成失败: ' + (e.message || '未知错误');
+  } finally {
+    document.getElementById('ai-gen-btn').disabled = false;
+  }
+}
+
+async function regenerateAIStory() {
+  document.getElementById('ai-story-box').classList.add('hidden');
+  document.getElementById('ai-loading').classList.remove('hidden');
+  try {
+    const story = await generateStory(aiStubbornWords);
+    document.getElementById('ai-loading').classList.add('hidden');
+    document.getElementById('ai-story-box').classList.remove('hidden');
+    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, aiStubbornWords);
+  } catch (e) {
+    document.getElementById('ai-loading').classList.add('hidden');
+    document.getElementById('ai-story-box').classList.remove('hidden');
+    document.getElementById('ai-story-content').innerHTML = '<p style="color:var(--red-d)">生成失败: ' + e.message + '</p>';
+  }
+}
+window.generateAIStory = generateAIStory;
+window.regenerateAIStory = regenerateAIStory;
+window.toggleAIWord = toggleAIWord;
+
+// Flashcard popup — show AI story option when wrongOnly mode has stubborn words
+let _pendingStartFlashcard = false;
+function checkAIStoryPopup() {
+  const stubborn = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+  if (stubborn.length === 0) return startFlashcard();
+
+  document.getElementById('ai-popup-count').textContent = stubborn.length;
+  document.getElementById('ai-popup-tags').innerHTML = stubborn.map(w =>
+    '<span class="ai-word-tag">' + w.word + '</span>'
+  ).join('');
+  document.getElementById('ai-popup').classList.remove('hidden');
+  _pendingStartFlashcard = true;
+}
+
+function goAIFromPopup() {
+  document.getElementById('ai-popup').classList.add('hidden');
+  document.getElementById('fc-start').classList.add('hidden');
+  // Remember the flashcard intent, go to AI story first
+  sessionStorage.setItem('ai_return_to_fc', '1');
+  goPage('aistory');
+}
+
+function skipAIPopup() {
+  document.getElementById('ai-popup').classList.add('hidden');
+  startFlashcard();
+}
+window.goAIFromPopup = goAIFromPopup;
+window.skipAIPopup = skipAIPopup;
 
 // ==================== Wrong Words ====================
 function renderWwUnitChips() {

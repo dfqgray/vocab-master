@@ -66,6 +66,7 @@
         <button class="nt" onclick="goPage('write')">✍️ 拼写</button>
         <button class="nt" onclick="goPage('wrong')">📋 错词</button>
         <button class="nt" onclick="goPage('review')">🧠 复习</button>
+        <button class="nt" onclick="goPage('aistory')">🤖 AI故事</button>
         <button class="nt" onclick="goPage('words')">📚 词表</button>
         <button class="nt" onclick="goPage('achievements')">🏆 成就</button>
       </div>
@@ -572,6 +573,65 @@
           <button class="btn btn-green" onclick="resetReview()">🔄 再来一组</button>
           <button class="btn btn-gray" onclick="goPage('home')">🏠 返回首页</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AI Story Page ==================== -->
+  <div class="page hidden" id="page-aistory">
+    <div class="page-title">🤖 AI 短文背诵</div>
+    <div class="page-sub">顽固词生成语境记忆</div>
+
+    <!-- Empty -->
+    <div id="ai-empty" class="hidden">
+      <div class="result">
+        <div class="big-emoji">🎉</div>
+        <h2>今天没有顽固词</h2>
+        <p>同一个词一天内错3次以上才会触发。继续学习！</p>
+        <button class="btn btn-green" onclick="goPage('flashcard')">📇 去学闪卡</button>
+      </div>
+    </div>
+
+    <!-- Has stubborn words -->
+    <div id="ai-ready">
+      <div class="ai-words-bar">
+        <span>今日顽固词 (<span id="ai-word-count">0</span>个)</span>
+        <div class="ai-word-tags" id="ai-word-tags"></div>
+      </div>
+      <div style="text-align:center;margin:16px 0">
+        <button class="btn btn-purple" id="ai-gen-btn" onclick="window.generateAIStory()">🚀 生成短文</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="ai-loading" class="hidden" style="text-align:center;padding:40px">
+      <div class="landing-spinner"></div>
+      <p style="color:var(--t2);margin-top:12px">AI 正在为你创作短文...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="ai-error" class="hidden" style="text-align:center;padding:20px;color:var(--red-d);font-size:14px"></div>
+
+    <!-- Story display -->
+    <div id="ai-story-box" class="hidden">
+      <div class="ai-story" id="ai-story-content"></div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-green" onclick="window.regenerateAIStory()">🔄 换一篇</button>
+        <button class="btn btn-gray" onclick="goPage('flashcard')">📇 开始学闪卡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AI Flashcard Popup ==================== -->
+  <div class="overlay hidden" id="ai-popup">
+    <div class="ai-popup-card">
+      <div class="big-emoji" style="font-size:40px">🧠</div>
+      <h3 style="margin:8px 0">有 <span id="ai-popup-count">0</span> 个顽固词</h3>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px">今天错了3次以上，想先用AI短文加深记忆吗？</p>
+      <div class="ai-word-tags" id="ai-popup-tags" style="margin-bottom:16px;justify-content:center"></div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-purple" id="ai-popup-go" onclick="window.goAIFromPopup()">🤖 AI 短文背诵</button>
+        <button class="btn btn-gray" id="ai-popup-skip" onclick="window.skipAIPopup()">⏭ 直接开始闪卡</button>
       </div>
     </div>
   </div>
