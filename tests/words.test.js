@@ -32,12 +32,15 @@ describe('PET 词库完整性', () => {
     });
   });
 
-  it('同形异义词用 w 后缀区分（如 record n / record v）', () => {
-    const homographs = WORDS_PET.filter(w => /\s[nvadj/]/.test(w.w));
-    // These are valid — same spelling, different POS, disambiguated in data
-    expect(homographs.length).toBeGreaterThan(0);
-    homographs.forEach(w => {
-      expect(w.w).toMatch(/^[a-z]+ [nvadj/]+$/);
+  it('词性后缀已合并到 pos 字段，w 字段只保留单词本身', () => {
+    // After fix: all w fields are clean words without POS suffixes
+    const withPosSuffix = WORDS_PET.filter(w => /\s[nvadj/]/.test(w.w));
+    expect(withPosSuffix.length).toBe(0);
+    // But multi-word phrases like "air conditioning" are still valid
+    const multiWord = WORDS_PET.filter(w => /\s/.test(w.w));
+    const validPhrases = ['air conditioning', 'chat room', 'dining room', 'jet engine', 'ought to'];
+    multiWord.forEach(w => {
+      expect(validPhrases).toContain(w.w);
     });
   });
 
