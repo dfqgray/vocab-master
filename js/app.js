@@ -2050,9 +2050,11 @@ async function handleLandingSubmit() {
   btn.disabled = true;
   btn.textContent = '连接中...';
 
-  // Wait for init to finish if still loading
+  // Wait for init to finish if still loading (max 15s timeout)
   if (!_initReady && _initPromise) {
-    await _initPromise;
+    const timeout = new Promise(r => setTimeout(r, 15000));
+    await Promise.race([_initPromise, timeout]);
+    _initReady = true;
   }
 
   if (!isCloudReady()) {
@@ -2246,15 +2248,19 @@ let _initPromise = null;
 
 function _doInit() {
   if (_initPromise) return _initPromise;
-  _initPromise = Promise.all([
-    initTextbook(),
-    initSupabase()
+  const timeout = new Promise(r => setTimeout(r, 20000));
+  _initPromise = Promise.race([
+    Promise.all([
+      initTextbook().catch(e => { console.error('[Init] textbook error:', e); return null; }),
+      initSupabase().catch(() => false)
+    ]),
+    timeout.then(() => { console.warn('[Init] timed out'); return [null, false]; })
   ]).then(([tb, supabaseOk]) => {
-    // WORDS loaded from textbook module
-    WORDS = [...getWords()];
-    loadLocal();
+    if (tb) {
+      WORDS = [...getWords()];
+      loadLocal();
+    }
     _initReady = true;
-    // If already logged in, skip landing page
     if (supabaseOk) {
       return cloudCheckSession().then(loggedIn => {
         if (loggedIn) {
@@ -2265,7 +2271,7 @@ function _doInit() {
     }
   }).catch(e => {
     console.error('[Init] failed:', e);
-    _initReady = true; // allow login attempt even on partial failure
+    _initReady = true;
   });
   return _initPromise;
 }
