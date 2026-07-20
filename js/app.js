@@ -837,6 +837,7 @@ window.toggleWrUnit = toggleWrUnit;
 
 // ==================== Flashcard ====================
 function resetFlashcard() {
+  _skipAIStubbornCheck = false;
   document.getElementById('fc-start').classList.remove('hidden');
   document.getElementById('fc-play').classList.add('hidden');
   document.getElementById('fc-done').classList.add('hidden');
@@ -936,15 +937,18 @@ window.toggleStarredOnly = toggleStarredOnly;
 window.toggleWrongOnly = toggleWrongOnly;
 window.toggleKnownOnly = toggleKnownOnly;
 
+let _skipAIStubbornCheck = false;
+
 function startFlashcard() {
-  // If wrongOnly mode, check for stubborn words first
-  if (fcS.wrongOnly) {
+  // If wrongOnly mode, check for stubborn words first (only once)
+  if (fcS.wrongOnly && !_skipAIStubbornCheck) {
     const stubborn = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
     if (stubborn.length > 0) {
       checkAIStoryPopup();
       return;
     }
   }
+  _skipAIStubbornCheck = false;
   let pool;
   let unitPool = getUnitPool(fcSelectedUnits);
   if (fcS.starredOnly) pool = unitPool.filter(w => starredWords.has(w.w));
@@ -1724,6 +1728,7 @@ function goAIFromPopup() {
 
 function skipAIPopup() {
   document.getElementById('ai-popup').classList.add('hidden');
+  _skipAIStubbornCheck = true;
   startFlashcard();
 }
 window.goAIFromPopup = goAIFromPopup;
