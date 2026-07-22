@@ -728,7 +728,7 @@ function updateHome() {
   document.getElementById('wl-badge').textContent = total + ' 词';
   document.getElementById('ww-badge').textContent = wrongWords.size + ' 词';
   document.getElementById('rv-badge').textContent = reviewDue + ' 词';
-  const stubbornCount = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null).length;
+  const stubbornCount = getStubbornList().length;
   document.getElementById('ai-badge').textContent = stubbornCount + ' 词';
   document.getElementById('star-fc').style.opacity = starredWords.size > 0 ? '1' : '0.3';
   document.getElementById('star-ww').style.opacity = wrongWords.size > 0 ? '1' : '0.3';
@@ -942,7 +942,7 @@ let _skipAIStubbornCheck = false;
 function startFlashcard() {
   // If wrongOnly mode, check for stubborn words first (only once)
   if (fcS.wrongOnly && !_skipAIStubbornCheck) {
-    const stubborn = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+    const stubborn = getStubbornList();
     if (stubborn.length > 0) {
       checkAIStoryPopup();
       return;
@@ -1643,39 +1643,43 @@ function skipReviewCard() { rvS.index++; showReviewCard(); }
 window.skipReviewCard = skipReviewCard;
 
 // ==================== AI Story ====================
-let aiStubbornWords = [];
+function getStubbornList() {
+  return getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null)
+    .filter(s => wordStates[s.word] !== 'known');
+}
 
 function resetAIStory() {
-  aiStubbornWords = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+  const stubbornWords = getStubbornList();
   document.getElementById('ai-ready').classList.add('hidden');
   document.getElementById('ai-empty').classList.add('hidden');
   document.getElementById('ai-loading').classList.add('hidden');
   document.getElementById('ai-error').classList.add('hidden');
   document.getElementById('ai-story-box').classList.add('hidden');
 
-  if (aiStubbornWords.length === 0) {
+  if (stubbornWords.length === 0) {
     document.getElementById('ai-empty').classList.remove('hidden');
     return;
   }
   document.getElementById('ai-ready').classList.remove('hidden');
-  document.getElementById('ai-word-count').textContent = aiStubbornWords.length;
-  document.getElementById('ai-word-tags').innerHTML = aiStubbornWords.map(w =>
+  document.getElementById('ai-word-count').textContent = stubbornWords.length;
+  document.getElementById('ai-word-tags').innerHTML = stubbornWords.map(w =>
     '<span class="ai-word-tag">' + w.word + '<span class="awt-meaning">' + w.meaning + '</span></span>'
   ).join('');
 }
 
 async function generateAIStory() {
-  if (aiStubbornWords.length === 0) return;
+  const stubbornWords = getStubbornList();
+  if (stubbornWords.length === 0) return;
   document.getElementById('ai-ready').classList.add('hidden');
   document.getElementById('ai-loading').classList.remove('hidden');
   document.getElementById('ai-error').classList.add('hidden');
   document.getElementById('ai-gen-btn').disabled = true;
 
   try {
-    const story = await generateStory(aiStubbornWords);
+    const story = await generateStory(stubbornWords);
     document.getElementById('ai-loading').classList.add('hidden');
     document.getElementById('ai-story-box').classList.remove('hidden');
-    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, aiStubbornWords);
+    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, stubbornWords);
   } catch (e) {
     document.getElementById('ai-loading').classList.add('hidden');
     document.getElementById('ai-ready').classList.remove('hidden');
@@ -1687,13 +1691,14 @@ async function generateAIStory() {
 }
 
 async function regenerateAIStory() {
+  const stubbornWords = getStubbornList();
   document.getElementById('ai-story-box').classList.add('hidden');
   document.getElementById('ai-loading').classList.remove('hidden');
   try {
-    const story = await generateStory(aiStubbornWords);
+    const story = await generateStory(stubbornWords);
     document.getElementById('ai-loading').classList.add('hidden');
     document.getElementById('ai-story-box').classList.remove('hidden');
-    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, aiStubbornWords);
+    document.getElementById('ai-story-content').innerHTML = renderStoryHTML(story, stubbornWords);
   } catch (e) {
     document.getElementById('ai-loading').classList.add('hidden');
     document.getElementById('ai-story-box').classList.remove('hidden');
@@ -1707,7 +1712,7 @@ window.toggleAIWord = toggleAIWord;
 // Flashcard popup — show AI story option when wrongOnly mode has stubborn words
 let _pendingStartFlashcard = false;
 function checkAIStoryPopup() {
-  const stubborn = getStubbornWords(reviewSchedule, (w) => WORDS.find(x => x.w === w) || null);
+  const stubborn = getStubbornList();
   if (stubborn.length === 0) return startFlashcard();
 
   document.getElementById('ai-popup-count').textContent = stubborn.length;
