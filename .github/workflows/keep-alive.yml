@@ -2,16 +2,47 @@ name: Supabase Keep-Alive
 
 on:
   schedule:
-    - cron: '17 3 * * *'   # 每天 UTC 03:17（北京时间 ~11:17）
+    - cron: '17 3 * * *'    # UTC 03:17 = 北京时间 11:17
+    - cron: '17 15 * * *'   # UTC 15:17 = 北京时间 23:17
   workflow_dispatch:        # 允许手动触发
 
 jobs:
-  ping:
+  keep-alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
+      - name: 真实登录 + 数据库访问保活
+        env:
+          # URL / anon key 与 js/supabase.js 保持一致（前端已公开，非机密）
+          SUPABASE_URL: https://cbzmnpogteihbywamvlp.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_ArmMNthfTBG8yqo4rQ8gdA_4O-JXLwJ
+          # 账号密码为机密，配置在 GitHub Secrets 中
+          SUPABASE_EMAIL: ${{ secrets.SUPABASE_EMAIL }}
+          SUPABASE_PASSWORD: ${{ secrets.SUPABASE_PASSWORD }}
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            "https://cbzmnpogteihbywamvlp.supabase.co/auth/v1/health"
-          echo ""
-          echo "Supabase ping completed."
+          set -uo pipefail
+
+          # 1) 用本人账号做真实密码登录（制造 Auth 活动）
+          LOGIN=$(curl -sS -X POST "${SUPABASE_URL}/auth/v1/token?grant_type=password" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            --data "$(jq -nc --arg e "$SUPABASE_EMAIL" --arg p "$SUPABASE_PASSWORD" '{email:$e,password:$p}')")
+
+          TOKEN=$(printf '%s' "$LOGIN" | jq -r '.access_token // empty')
+          if [ -z "$TOKEN" ]; then
+            echo "::error::登录失败：$(printf '%s' "$LOGIN" | jq -r '.error_description // .msg // "未知错误"')"
+            exit 1
+          fi
+          echo "✅ Auth 登录成功"
+
+          # 2) 用 access_token 做一次真实数据库读取（制造数据库活动）
+          CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/user_progress?select=user_id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${TOKEN}")
+
+          echo "数据库查询状态码：${CODE}"
+          if [ "$CODE" = "200" ] || [ "$CODE" = "204" ]; then
+            echo "✅ 保活完成（登录 + 数据库访问均成功）"
+          else
+            echo "::warning::数据库访问返回 ${CODE}（登录已成功，保活主要目标已达成）"
+          fi
