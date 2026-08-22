@@ -23,7 +23,7 @@ let game = {
 };
 
 // Session state
-let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false, knownOnly: false, recognition: null, isListening: false };
+let fcS = { index: 0, list: [], knownCount: 0, total: 0, shuffle: false, starredOnly: false, wrongOnly: false, knownOnly: false, unlearnedFirst: false, recognition: null, isListening: false };
 let qzS = { index: 0, total: 10, score: 0, questions: [], current: null };
 let wrS = { index: 0, total: 10, score: 0, words: [] };
 let mtS = { pairs: [], matched: 0, total: 6, startTime: 0, timerInt: null, firstSel: null, locked: false };
@@ -932,10 +932,15 @@ function toggleKnownOnly(el) {
   document.getElementById('fc-opt-starred').classList.remove('on');
   document.getElementById('fc-opt-wrong').classList.remove('on');
 }
+function toggleUnlearnedFirst(el) {
+  fcS.unlearnedFirst = !fcS.unlearnedFirst;
+  el.classList.toggle('on', fcS.unlearnedFirst);
+}
 window.toggleShuffle = toggleShuffle;
 window.toggleStarredOnly = toggleStarredOnly;
 window.toggleWrongOnly = toggleWrongOnly;
 window.toggleKnownOnly = toggleKnownOnly;
+window.toggleUnlearnedFirst = toggleUnlearnedFirst;
 
 let _skipAIStubbornCheck = false;
 
@@ -956,7 +961,11 @@ function startFlashcard() {
   else if (fcS.knownOnly) pool = unitPool.filter(w => wordStates[w.w] === 'known');
   else pool = unitPool.filter(w => wordStates[w.w] !== 'known');
   if (pool.length === 0) pool = [...unitPool];
-  pool.sort(() => Math.random() - 0.5);
+  pool.sort(() => Math.random() - 0.5); // shuffle first
+  if (fcS.unlearnedFirst) {
+    // Stable sort keeps shuffle within groups: unlearned (no state) first
+    pool.sort((a, b) => (wordStates[a.w] ? 1 : 0) - (wordStates[b.w] ? 1 : 0));
+  }
   fcS.list = pool.slice(0, Math.min(fcSessionSize, pool.length));
   fcS.index = 0;
   fcS.knownCount = 0;
