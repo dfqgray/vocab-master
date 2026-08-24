@@ -779,6 +779,21 @@ function getUnitPool(selectedUnits) {
   return result;
 }
 
+// Scope filter for quiz/match/write: 'all' | 'today' | 'known'
+let qzScope = 'all', mtScope = 'all', wrScope = 'all';
+
+function getScopePool(unitPool, scope) {
+  if (scope === 'known') return unitPool.filter(w => wordStates[w.w] === 'known');
+  if (scope === 'today') {
+    const today = todayStr();
+    return unitPool.filter(w => {
+      const rs = reviewSchedule[w.w];
+      return rs && (rs.history || []).some(h => h.date === today);
+    });
+  }
+  return [...unitPool];
+}
+
 function renderUnitChips(rowId, infoId, selectedUnits, toggleFnName) {
   const row = document.getElementById(rowId);
   if (!row) return;
@@ -941,6 +956,14 @@ window.toggleStarredOnly = toggleStarredOnly;
 window.toggleWrongOnly = toggleWrongOnly;
 window.toggleKnownOnly = toggleKnownOnly;
 window.toggleUnlearnedFirst = toggleUnlearnedFirst;
+
+// Scope toggles for quiz/match/write
+function setQzScope(scope, el) { qzScope = scope; document.querySelectorAll('#qz-scope-row .scope-chip').forEach(c => c.classList.remove('on')); el.classList.add('on'); }
+function setMtScope(scope, el) { mtScope = scope; document.querySelectorAll('#mt-scope-row .scope-chip').forEach(c => c.classList.remove('on')); el.classList.add('on'); }
+function setWrScope(scope, el) { wrScope = scope; document.querySelectorAll('#wr-scope-row .scope-chip').forEach(c => c.classList.remove('on')); el.classList.add('on'); }
+window.setQzScope = setQzScope;
+window.setMtScope = setMtScope;
+window.setWrScope = setWrScope;
 
 let _skipAIStubbornCheck = false;
 
@@ -1189,7 +1212,7 @@ function renderHearts() {
 
 function startQuiz() {
   qzS.index = 0; qzS.score = 0;
-  const unitPool = getUnitPool(qzSelectedUnits);
+  const unitPool = getScopePool(getUnitPool(qzSelectedUnits), qzScope);
   qzS.total = Math.min(10, unitPool.length);
   qzS.questions = [];
   const pool = [...unitPool].sort(() => Math.random() - 0.5).slice(0, qzS.total);
@@ -1218,7 +1241,7 @@ function showQuestion() {
     document.getElementById('qz-dict').classList.add('hidden');
     document.getElementById('qz-word').textContent = q.word.w;
     const correct = q.word.m;
-    const wrongs = getUnitPool(qzSelectedUnits).filter(w => w.w !== q.word.w).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.m);
+    const wrongs = getScopePool(getUnitPool(qzSelectedUnits), qzScope).filter(w => w.w !== q.word.w).sort(() => Math.random() - 0.5).slice(0, 3).map(w => w.m);
     const options = [correct, ...wrongs].sort(() => Math.random() - 0.5);
     const labels = ['A', 'B', 'C', 'D'];
     const c = document.getElementById('qz-options');
@@ -1351,10 +1374,13 @@ function resetWrite() {
 
 function startWrite() {
   wrS.index = 0; wrS.score = 0;
-  const unitPool = getUnitPool(wrSelectedUnits);
+  const unitPool = getScopePool(getUnitPool(wrSelectedUnits), wrScope);
   wrS.total = Math.min(10, unitPool.length);
-  const pool = unitPool.filter(w => wordStates[w.w] !== 'known');
-  const finalPool = pool.length >= wrS.total ? pool : [...unitPool];
+  let finalPool = unitPool;
+  if (wrScope === 'all') {
+    const pool = unitPool.filter(w => wordStates[w.w] !== 'known');
+    finalPool = pool.length >= wrS.total ? pool : [...unitPool];
+  }
   wrS.words = [...finalPool].sort(() => Math.random() - 0.5).slice(0, wrS.total);
   document.getElementById('wr-start').classList.add('hidden');
   document.getElementById('wr-done').classList.add('hidden');
@@ -1444,7 +1470,7 @@ function resetMatch() {
 }
 
 function startMatch() {
-  const unitPool = getUnitPool(mtSelectedUnits);
+  const unitPool = getScopePool(getUnitPool(mtSelectedUnits), mtScope);
   const pool = [...unitPool].sort(() => Math.random() - 0.5).slice(0, 6);
   mtS.pairs = [];
   pool.forEach(w => {

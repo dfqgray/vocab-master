@@ -300,6 +300,14 @@
         <div class="fc-unit-row" id="qz-unit-row"></div>
         <div class="fc-unit-info" id="qz-unit-info"></div>
       </div>
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">词汇范围：</span>
+        <div class="fc-unit-row" id="qz-scope-row">
+          <span class="fc-unit-chip scope-chip on" onclick="setQzScope('all', this)">全部</span>
+          <span class="fc-unit-chip scope-chip" onclick="setQzScope('today', this)">🕐 仅今天背诵的</span>
+          <span class="fc-unit-chip scope-chip" onclick="setQzScope('known', this)">✅ 仅会词汇</span>
+        </div>
+      </div>
       <div style="text-align:center;margin-top:16px">
         <button class="btn btn-blue btn-full" style="max-width:300px" onclick="startQuiz()">🚀 开始测验</button>
       </div>
@@ -375,6 +383,14 @@
         <div class="fc-unit-row" id="mt-unit-row"></div>
         <div class="fc-unit-info" id="mt-unit-info"></div>
       </div>
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">词汇范围：</span>
+        <div class="fc-unit-row" id="mt-scope-row">
+          <span class="fc-unit-chip scope-chip on" onclick="setMtScope('all', this)">全部</span>
+          <span class="fc-unit-chip scope-chip" onclick="setMtScope('today', this)">🕐 仅今天背诵的</span>
+          <span class="fc-unit-chip scope-chip" onclick="setMtScope('known', this)">✅ 仅会词汇</span>
+        </div>
+      </div>
       <div style="text-align:center;margin-top:16px">
         <button class="btn btn-purple btn-full" style="max-width:300px" onclick="startMatch()">🚀 开始配对</button>
       </div>
@@ -416,6 +432,14 @@
         <span class="fc-unit-label">选择单元：</span>
         <div class="fc-unit-row" id="wr-unit-row"></div>
         <div class="fc-unit-info" id="wr-unit-info"></div>
+      </div>
+      <div class="fc-unit-selector">
+        <span class="fc-unit-label">词汇范围：</span>
+        <div class="fc-unit-row" id="wr-scope-row">
+          <span class="fc-unit-chip scope-chip on" onclick="setWrScope('all', this)">全部</span>
+          <span class="fc-unit-chip scope-chip" onclick="setWrScope('today', this)">🕐 仅今天背诵的</span>
+          <span class="fc-unit-chip scope-chip" onclick="setWrScope('known', this)">✅ 仅会词汇</span>
+        </div>
       </div>
       <div style="text-align:center;margin-top:16px">
         <button class="btn btn-green btn-full" style="max-width:300px" onclick="startWrite()">🚀 开始拼写</button>
