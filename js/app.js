@@ -2090,11 +2090,10 @@ async function handleLandingSubmit() {
   btn.disabled = true;
   btn.textContent = '连接中...';
 
-  // Wait for init to finish if still loading (max 15s timeout)
-  if (!_initReady && _initPromise) {
+  // 登录前只等 Supabase 就绪（快），词库在登录后再统一加载
+  if (!isCloudReady() && _supabasePromise) {
     const timeout = new Promise(r => setTimeout(r, 15000));
-    await Promise.race([_initPromise, timeout]);
-    _initReady = true;
+    await Promise.race([_supabasePromise, timeout]);
   }
 
   if (!isCloudReady()) {
@@ -2112,6 +2111,20 @@ async function handleLandingSubmit() {
     } else {
       await cloudLogin(email, password);
     }
+
+    // 登录成功：若词库尚未加载完成，显示转圈等待
+    if (getWords().length === 0) {
+      document.getElementById('landing-fields').classList.add('hidden');
+      document.getElementById('landing-loading').classList.remove('hidden');
+      const loadTimeout = new Promise(r => setTimeout(r, 20000));
+      await Promise.race([_textbookPromise || Promise.resolve(null), loadTimeout]);
+      const tb = _textbookPromise ? await _textbookPromise.catch(() => null) : null;
+      if (tb) {
+        WORDS = [...getWords()];
+        loadLocal();
+      }
+    }
+
     showApp();
     showSyncBadge(landMode === 'register' ? '注册成功！' : '登录成功！', false);
   } catch (e) {
@@ -2285,14 +2298,18 @@ window.addEventListener('online', () => {
 // Init: load textbook and Supabase in background, button stays enabled
 let _initReady = false;
 let _initPromise = null;
+let _textbookPromise = null;
+let _supabasePromise = null;
 
 function _doInit() {
   if (_initPromise) return _initPromise;
+  _textbookPromise = initTextbook().catch(e => { console.error('[Init] textbook error:', e); return null; });
+  _supabasePromise = initSupabase().catch(() => false);
   const timeout = new Promise(r => setTimeout(r, 20000));
   _initPromise = Promise.race([
     Promise.all([
-      initTextbook().catch(e => { console.error('[Init] textbook error:', e); return null; }),
-      initSupabase().catch(() => false)
+      _textbookPromise,
+      _supabasePromise
     ]),
     timeout.then(() => { console.warn('[Init] timed out'); return [null, false]; })
   ]).then(([tb, supabaseOk]) => {
